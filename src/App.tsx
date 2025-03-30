@@ -21,6 +21,9 @@ import AuthCallback from "./pages/AuthCallback";
 
 // App Pages
 import Dashboard from "./pages/Dashboard";
+import TasksPage from "./pages/TasksPage";
+import AppointmentsPage from "./pages/AppointmentsPage";
+import HabitsPage from "./pages/HabitsPage";
 import TaskForm from "./pages/TaskForm";
 import AppointmentForm from "./pages/AppointmentForm";
 import NotFound from "./pages/NotFound";
@@ -79,11 +82,13 @@ const App = () => {
           isAuthenticated ? <AppLayout /> : <Navigate to="/login" replace />
         }>
           <Route index element={<Dashboard />} />
-          <Route path="tasks" element={<div>Tasks Page</div>} />
+          <Route path="tasks" element={<TasksPage />} />
           <Route path="tasks/new" element={<TaskForm />} />
-          <Route path="appointments" element={<div>Appointments Page</div>} />
+          <Route path="tasks/edit/:id" element={<TaskForm />} />
+          <Route path="appointments" element={<AppointmentsPage />} />
           <Route path="appointments/new" element={<AppointmentForm />} />
-          <Route path="habits" element={<div>Habits Page</div>} />
+          <Route path="appointments/edit/:id" element={<AppointmentForm />} />
+          <Route path="habits" element={<HabitsPage />} />
           <Route path="settings" element={<div>Settings Page</div>} />
         </Route>
         

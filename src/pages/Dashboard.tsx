@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,11 +126,11 @@ const Dashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => navigate('/tasks/new')}>
+          <Button onClick={() => navigate('/tasks/new')} data-testid="new-task-button">
             <Plus className="h-4 w-4 mr-2" />
             Nova Tarefa
           </Button>
-          <Button onClick={() => navigate('/appointments/new')} variant="outline">
+          <Button onClick={() => navigate('/appointments/new')} variant="outline" data-testid="new-appointment-button">
             <Plus className="h-4 w-4 mr-2" />
             Novo Compromisso
           </Button>
