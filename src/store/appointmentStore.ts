@@ -45,12 +45,13 @@ export const useAppointmentStore = create<AppointmentState>()(
           
           if (error) throw error;
           
+          // Cast the data to the correct type
+          const typedAppointment = data as unknown as Appointment;
+          
           set((state) => ({
-            appointments: [...state.appointments, data],
+            appointments: [...state.appointments, typedAppointment],
             loading: false,
           }));
-          
-          return data;
         } catch (error) {
           console.error('Error adding appointment:', error);
           set({ error: error.message, loading: false });
@@ -69,9 +70,12 @@ export const useAppointmentStore = create<AppointmentState>()(
           
           if (error) throw error;
           
+          // Cast the data to the correct type
+          const typedAppointment = data as unknown as Appointment;
+          
           set((state) => ({
             appointments: state.appointments.map((appointment) =>
-              appointment.id === id ? { ...appointment, ...data } : appointment
+              appointment.id === id ? { ...appointment, ...typedAppointment } : appointment
             ),
             loading: false,
           }));
@@ -113,7 +117,10 @@ export const useAppointmentStore = create<AppointmentState>()(
           
           if (error) throw error;
           
-          set({ appointments: data || [], loading: false });
+          // Cast the data to the correct type
+          const typedAppointments = (data || []) as unknown as Appointment[];
+          
+          set({ appointments: typedAppointments, loading: false });
         } catch (error) {
           console.error('Error fetching appointments:', error);
           set({ error: error.message, loading: false });

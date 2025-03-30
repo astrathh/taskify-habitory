@@ -55,13 +55,14 @@ export const useNotificationStore = create<NotificationState>()(
           
           if (error) throw error;
           
+          // Cast the data to the correct type
+          const typedNotification = data as unknown as Notification;
+          
           set((state) => ({
-            notifications: [data, ...state.notifications],
+            notifications: [typedNotification, ...state.notifications],
             unreadCount: state.unreadCount + 1,
             loading: false,
           }));
-          
-          return data;
         } catch (error) {
           console.error('Error adding notification:', error);
           set({ error: error.message, loading: false });
@@ -79,6 +80,9 @@ export const useNotificationStore = create<NotificationState>()(
             .single();
           
           if (error) throw error;
+          
+          // Cast the data to the correct type
+          const typedNotification = data as unknown as Notification;
           
           set((state) => {
             const updated = state.notifications.map((notification) =>
@@ -165,9 +169,23 @@ export const useNotificationStore = create<NotificationState>()(
           
           if (error) throw error;
           
-          const unreadCount = (data || []).filter((n) => !n.read).length;
+          // Cast the data to the correct type and ensure type values are valid
+          const typedNotifications = (data || []).map(notification => {
+            // Ensure that type is a valid NotificationType
+            const validType = ['task', 'appointment', 'system'].includes(notification.type) 
+              ? notification.type as NotificationType 
+              : 'system';
+            
+            return {
+              ...notification,
+              type: validType,
+              read: !!notification.read, // Ensure boolean
+            } as Notification;
+          });
+          
+          const unreadCount = typedNotifications.filter((n) => !n.read).length;
           set({ 
-            notifications: data || [], 
+            notifications: typedNotifications, 
             unreadCount,
             loading: false 
           });

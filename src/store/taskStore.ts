@@ -50,12 +50,13 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
+          // Cast the data to the correct type
+          const typedTask = data as unknown as Task;
+          
           set((state) => ({
-            tasks: [...state.tasks, data],
+            tasks: [...state.tasks, typedTask],
             loading: false,
           }));
-          
-          return data;
         } catch (error) {
           console.error('Error adding task:', error);
           set({ error: error.message, loading: false });
@@ -74,9 +75,12 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
+          // Cast the data to the correct type
+          const typedTask = data as unknown as Task;
+          
           set((state) => ({
             tasks: state.tasks.map((task) =>
-              task.id === id ? { ...task, ...data } : task
+              task.id === id ? { ...task, ...typedTask } : task
             ),
             loading: false,
           }));
@@ -116,7 +120,10 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          set({ tasks: data || [], loading: false });
+          // Cast the data to the correct type
+          const typedTasks = (data || []) as unknown as Task[];
+          
+          set({ tasks: typedTasks, loading: false });
         } catch (error) {
           console.error('Error fetching tasks:', error);
           set({ error: error.message, loading: false });
