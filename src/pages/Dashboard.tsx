@@ -25,14 +25,14 @@ const Dashboard = () => {
 
   // Initialize current month for habits if needed
   useEffect(() => {
-    if (user?.uid) {
+    if (user?.id) {
       const currentMonth = getCurrentMonth();
       const hasCurrentMonth = monthlyProgress.some(
         (progress) => progress.month === currentMonth
       );
       
       if (!hasCurrentMonth) {
-        createMonthlyProgress(currentMonth, user.uid);
+        createMonthlyProgress(currentMonth, user.id);
       }
       
       setCurrentMonth(currentMonth);
@@ -45,7 +45,7 @@ const Dashboard = () => {
     if (tasks.length === 0 && user) {
       // Add a welcome notification
       addNotification({
-        user_id: user.uid,
+        user_id: user.id,
         message: 'Bem-vindo ao Taskify! Comece adicionando suas tarefas.',
         type: 'system',
       });
@@ -79,7 +79,7 @@ const Dashboard = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Bem-vindo ao seu painel de controle, {user?.displayName || 'usuário'}!
+            Bem-vindo ao seu painel de controle, {user?.user_metadata?.name || user?.email || 'usuário'}!
           </p>
         </div>
         <div className="flex items-center gap-2">
