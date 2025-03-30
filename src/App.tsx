@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import { useEffect } from "react";
 import { onAuthStateChange } from "@/lib/firebase";
@@ -45,25 +45,23 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            {/* App Routes - Protected by AppLayout */}
-            <Route path="/" element={<AppLayout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="tasks" element={<div>Tasks Page</div>} />
-              <Route path="appointments" element={<div>Appointments Page</div>} />
-              <Route path="habits" element={<div>Habits Page</div>} />
-              <Route path="settings" element={<div>Settings Page</div>} />
-            </Route>
-            
-            {/* Catch-all redirect to 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <Routes>
+          {/* Auth Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* App Routes - Protected by AppLayout */}
+          <Route path="/" element={<AppLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="tasks" element={<div>Tasks Page</div>} />
+            <Route path="appointments" element={<div>Appointments Page</div>} />
+            <Route path="habits" element={<div>Habits Page</div>} />
+            <Route path="settings" element={<div>Settings Page</div>} />
+          </Route>
+          
+          {/* Catch-all redirect to 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </TooltipProvider>
     </QueryClientProvider>
   );
