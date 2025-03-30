@@ -18,6 +18,8 @@ import AuthCallback from "./pages/AuthCallback";
 
 // App Pages
 import Dashboard from "./pages/Dashboard";
+import TaskForm from "./pages/TaskForm";
+import AppointmentForm from "./pages/AppointmentForm";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
@@ -62,7 +64,9 @@ const App = () => {
         }>
           <Route index element={<Dashboard />} />
           <Route path="tasks" element={<div>Tasks Page</div>} />
+          <Route path="tasks/new" element={<TaskForm />} />
           <Route path="appointments" element={<div>Appointments Page</div>} />
+          <Route path="appointments/new" element={<AppointmentForm />} />
           <Route path="habits" element={<div>Habits Page</div>} />
           <Route path="settings" element={<div>Settings Page</div>} />
         </Route>
