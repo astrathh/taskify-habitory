@@ -1,0 +1,277 @@
+
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { CheckCircle, Calendar, BarChart3, AlertCircle, Clock, Plus } from 'lucide-react';
+import { useTaskStore } from '@/store/taskStore';
+import { useAppointmentStore } from '@/store/appointmentStore';
+import { useHabitStore } from '@/store/habitStore';
+import { useNotificationStore } from '@/store/notificationStore';
+import { useAuthStore } from '@/store/authStore';
+
+// Helper function to get current month name
+const getCurrentMonth = () => {
+  return new Date().toLocaleString('pt-BR', { month: 'long' });
+};
+
+const Dashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { tasks } = useTaskStore();
+  const { appointments } = useAppointmentStore();
+  const { monthlyProgress, createMonthlyProgress, setCurrentMonth } = useHabitStore();
+  const { addNotification } = useNotificationStore();
+
+  // Initialize current month for habits if needed
+  useEffect(() => {
+    if (user?.uid) {
+      const currentMonth = getCurrentMonth();
+      const hasCurrentMonth = monthlyProgress.some(
+        (progress) => progress.month === currentMonth
+      );
+      
+      if (!hasCurrentMonth) {
+        createMonthlyProgress(currentMonth, user.uid);
+      }
+      
+      setCurrentMonth(currentMonth);
+    }
+  }, [user, createMonthlyProgress, monthlyProgress, setCurrentMonth]);
+
+  // Some demo data for the dashboard
+  useEffect(() => {
+    // Only add demo notification if we don't have any tasks yet
+    if (tasks.length === 0 && user) {
+      // Add a welcome notification
+      addNotification({
+        user_id: user.uid,
+        message: 'Bem-vindo ao Taskify! Comece adicionando suas tarefas.',
+        type: 'system',
+      });
+    }
+  }, [user, tasks.length, addNotification]);
+
+  // Task metrics
+  const pendingTasks = tasks.filter((task) => task.status === 'pendente').length;
+  const completedTasks = tasks.filter((task) => task.status === 'concluída').length;
+  const highPriorityTasks = tasks.filter((task) => task.priority === 'alta' && task.status !== 'concluída').length;
+  
+  // Get upcoming appointments (next 7 days)
+  const today = new Date();
+  const nextWeek = new Date();
+  nextWeek.setDate(today.getDate() + 7);
+  
+  const upcomingAppointments = appointments.filter((appointment) => {
+    const appointmentDate = new Date(appointment.date);
+    return appointmentDate >= today && appointmentDate <= nextWeek;
+  });
+
+  // Get current month's habit progress
+  const currentMonth = getCurrentMonth();
+  const currentMonthProgress = monthlyProgress.find(
+    (progress) => progress.month === currentMonth
+  );
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Bem-vindo ao seu painel de controle, {user?.displayName || 'usuário'}!
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => navigate('/tasks/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Tarefa
+          </Button>
+          <Button onClick={() => navigate('/appointments/new')} variant="outline">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Compromisso
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tarefas Pendentes</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingTasks}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {completedTasks} tarefas concluídas
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Compromissos</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{upcomingAppointments.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Agendados para próximos 7 dias
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Progresso de Hábitos</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {currentMonthProgress?.overall || 0}%
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {currentMonthProgress?.habits.length || 0} hábitos em {currentMonth}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Prioridade Alta</CardTitle>
+            <AlertCircle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{highPriorityTasks}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Tarefas pendentes de prioridade alta
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Tarefas Recentes</CardTitle>
+            <CardDescription>
+              As últimas tarefas que você adicionou
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {tasks.length > 0 ? (
+              <div className="space-y-4">
+                {tasks.slice(0, 5).map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between p-3 border rounded-md"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          task.priority === 'alta'
+                            ? 'bg-destructive'
+                            : task.priority === 'média'
+                            ? 'bg-yellow-500'
+                            : 'bg-green-500'
+                        }`}
+                      />
+                      <div>
+                        <p className={`text-sm ${task.status === 'concluída' ? 'line-through text-muted-foreground' : ''}`}>
+                          {task.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {task.category} • Vence em{' '}
+                          {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        task.status === 'concluída'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : task.status === 'em progresso'
+                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                      }`}
+                    >
+                      {task.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <CheckCircle className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                <h3 className="text-lg font-medium">Nenhuma tarefa ainda</h3>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">
+                  Adicione suas primeiras tarefas para começar
+                </p>
+                <Button onClick={() => navigate('/tasks/new')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Tarefa
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Próximos Compromissos</CardTitle>
+            <CardDescription>
+              Compromissos agendados para os próximos dias
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {upcomingAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingAppointments.slice(0, 5).map((appointment) => (
+                  <div
+                    key={appointment.id}
+                    className="flex items-start gap-3 p-3 border rounded-md"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{appointment.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(appointment.date).toLocaleDateString('pt-BR', {
+                          weekday: 'long',
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                      {appointment.location && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Local: {appointment.location}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Calendar className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                <h3 className="text-lg font-medium">Nenhum compromisso</h3>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">
+                  Adicione seus próximos compromissos
+                </p>
+                <Button onClick={() => navigate('/appointments/new')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Compromisso
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
