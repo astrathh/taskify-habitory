@@ -1,13 +1,13 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User } from 'firebase/auth';
-import { signIn, signUp, signInWithGoogle, signOut, getAuthToken } from '@/lib/firebase';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 type AuthState = {
   user: User | null;
+  session: Session | null;
   loading: boolean;
-  token: string | null;
   error: string | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
@@ -15,7 +15,7 @@ type AuthState = {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
+  setSession: (session: Session | null) => void;
   clearError: () => void;
 };
 
@@ -23,60 +23,98 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      session: null,
       loading: false,
-      token: null,
       error: null,
       isAuthenticated: false,
       
       login: async (email, password) => {
         set({ loading: true, error: null });
         try {
-          const user = await signIn(email, password);
-          const token = await getAuthToken();
-          set({ user, token, isAuthenticated: true, loading: false });
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (error) throw error;
+          
+          set({ 
+            user: data.user, 
+            session: data.session,
+            isAuthenticated: true, 
+            loading: false 
+          });
         } catch (error: any) {
           set({ 
             error: error.message || 'Falha ao fazer login', 
             loading: false 
           });
+          throw error;
         }
       },
       
       register: async (email, password, name) => {
         set({ loading: true, error: null });
         try {
-          const user = await signUp(email, password, name);
-          const token = await getAuthToken();
-          set({ user, token, isAuthenticated: true, loading: false });
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                name
+              }
+            }
+          });
+          
+          if (error) throw error;
+          
+          set({ 
+            user: data.user, 
+            session: data.session,
+            isAuthenticated: !!data.session, 
+            loading: false 
+          });
         } catch (error: any) {
           set({ 
             error: error.message || 'Falha ao criar conta', 
             loading: false 
           });
+          throw error;
         }
       },
       
       loginWithGoogle: async () => {
         set({ loading: true, error: null });
         try {
-          const user = await signInWithGoogle();
-          const token = await getAuthToken();
-          set({ user, token, isAuthenticated: true, loading: false });
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: `${window.location.origin}/auth/callback`
+            }
+          });
+          
+          if (error) throw error;
+          
+          // O redirecionamento será tratado pelo Supabase
+          // User e session serão atualizados pelo onAuthStateChange
         } catch (error: any) {
           set({ 
             error: error.message || 'Falha ao fazer login com Google', 
             loading: false 
           });
+          throw error;
         }
       },
       
       logout: async () => {
         set({ loading: true });
         try {
-          await signOut();
+          const { error } = await supabase.auth.signOut();
+          if (error) throw error;
+          
           set({ 
             user: null, 
-            token: null, 
+            session: null,
             isAuthenticated: false, 
             loading: false 
           });
@@ -85,6 +123,7 @@ export const useAuthStore = create<AuthState>()(
             error: error.message || 'Falha ao fazer logout', 
             loading: false 
           });
+          throw error;
         }
       },
       
@@ -96,8 +135,12 @@ export const useAuthStore = create<AuthState>()(
         });
       },
       
-      setToken: (token) => {
-        set({ token });
+      setSession: (session) => {
+        set({ 
+          session,
+          user: session?.user || null,
+          isAuthenticated: !!session
+        });
       },
       
       clearError: () => set({ error: null }),
@@ -105,7 +148,6 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({ 
-        token: state.token,
         isAuthenticated: state.isAuthenticated 
       }),
     }

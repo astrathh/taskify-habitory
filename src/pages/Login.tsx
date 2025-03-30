@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,11 +32,7 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
-      navigate('/');
-      toast({
-        title: 'Login realizado com sucesso',
-        description: 'Bem-vindo ao Taskify',
-      });
+      // O redirecionamento será tratado pelo Supabase OAuth
     } catch (error) {
       // Error is handled by the store
     }
