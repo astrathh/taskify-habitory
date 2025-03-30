@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -37,6 +36,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useTaskStore, type TaskPriority, type TaskStatus, type TaskCategory } from '@/store/taskStore';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres' }),
@@ -55,6 +55,7 @@ const TaskForm = () => {
   const { toast } = useToast();
   const { user } = useAuthStore();
   const { addTask } = useTaskStore();
+  const { addNotification } = useNotificationStore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -67,7 +68,7 @@ const TaskForm = () => {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     if (!user) {
       toast({
         title: 'Erro',
@@ -77,21 +78,36 @@ const TaskForm = () => {
       return;
     }
 
-    addTask({
-      title: data.title,
-      category: data.category as TaskCategory,
-      priority: data.priority as TaskPriority,
-      status: data.status as TaskStatus,
-      due_date: data.due_date.toISOString(),
-      user_id: user.id,
-    });
+    try {
+      await addTask({
+        title: data.title,
+        category: data.category as TaskCategory,
+        priority: data.priority as TaskPriority,
+        status: data.status as TaskStatus,
+        due_date: data.due_date.toISOString(),
+        user_id: user.id,
+      });
 
-    toast({
-      title: 'Sucesso!',
-      description: 'Tarefa adicionada com sucesso',
-    });
+      await addNotification({
+        user_id: user.id,
+        message: `Nova tarefa criada: ${data.title}`,
+        type: 'task',
+      });
 
-    navigate('/tasks');
+      toast({
+        title: 'Sucesso!',
+        description: 'Tarefa adicionada com sucesso',
+      });
+
+      navigate('/tasks');
+    } catch (error) {
+      console.error('Erro ao adicionar tarefa:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao adicionar a tarefa',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

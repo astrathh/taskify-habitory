@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Appointment {
   id: string;
@@ -17,9 +18,10 @@ interface AppointmentState {
   loading: boolean;
   error: string | null;
   
-  addAppointment: (appointment: Omit<Appointment, 'id' | 'created_at'>) => void;
-  updateAppointment: (id: string, updatedAppointment: Partial<Appointment>) => void;
-  deleteAppointment: (id: string) => void;
+  addAppointment: (appointment: Omit<Appointment, 'id' | 'created_at'>) => Promise<void>;
+  updateAppointment: (id: string, updatedAppointment: Partial<Appointment>) => Promise<void>;
+  deleteAppointment: (id: string) => Promise<void>;
+  fetchAppointments: () => Promise<void>;
   setAppointments: (appointments: Appointment[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -32,34 +34,90 @@ export const useAppointmentStore = create<AppointmentState>()(
       loading: false,
       error: null,
       
-      addAppointment: (appointmentData) => {
-        const newAppointment: Appointment = {
-          ...appointmentData,
-          id: crypto.randomUUID(),
-          created_at: new Date().toISOString(),
-        };
-        
-        set((state) => ({
-          appointments: [...state.appointments, newAppointment],
-        }));
+      addAppointment: async (appointmentData) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('appointments')
+            .insert([appointmentData])
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          set((state) => ({
+            appointments: [...state.appointments, data],
+            loading: false,
+          }));
+          
+          return data;
+        } catch (error) {
+          console.error('Error adding appointment:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
-      updateAppointment: (id, updatedAppointment) => {
-        set((state) => ({
-          appointments: state.appointments.map((appointment) =>
-            appointment.id === id
-              ? { ...appointment, ...updatedAppointment }
-              : appointment
-          ),
-        }));
+      updateAppointment: async (id, updatedAppointment) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('appointments')
+            .update(updatedAppointment)
+            .eq('id', id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          set((state) => ({
+            appointments: state.appointments.map((appointment) =>
+              appointment.id === id ? { ...appointment, ...data } : appointment
+            ),
+            loading: false,
+          }));
+        } catch (error) {
+          console.error('Error updating appointment:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
-      deleteAppointment: (id) => {
-        set((state) => ({
-          appointments: state.appointments.filter(
-            (appointment) => appointment.id !== id
-          ),
-        }));
+      deleteAppointment: async (id) => {
+        set({ loading: true, error: null });
+        try {
+          const { error } = await supabase
+            .from('appointments')
+            .delete()
+            .eq('id', id);
+          
+          if (error) throw error;
+          
+          set((state) => ({
+            appointments: state.appointments.filter(
+              (appointment) => appointment.id !== id
+            ),
+            loading: false,
+          }));
+        } catch (error) {
+          console.error('Error deleting appointment:', error);
+          set({ error: error.message, loading: false });
+        }
+      },
+      
+      fetchAppointments: async () => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('appointments')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          
+          set({ appointments: data || [], loading: false });
+        } catch (error) {
+          console.error('Error fetching appointments:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
       setAppointments: (appointments) => {

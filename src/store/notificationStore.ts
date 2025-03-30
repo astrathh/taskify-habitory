@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 
 export type NotificationType = 'task' | 'appointment' | 'system';
 
@@ -18,12 +19,15 @@ interface NotificationState {
   unreadCount: number;
   loading: boolean;
   error: string | null;
+  initialNotificationSent: boolean;
   
-  addNotification: (notification: Omit<Notification, 'id' | 'created_at' | 'read'>) => void;
-  markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
-  deleteNotification: (id: string) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'created_at' | 'read'>) => Promise<void>;
+  markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  fetchNotifications: () => Promise<void>;
   setNotifications: (notifications: Notification[]) => void;
+  setInitialNotificationSent: (sent: boolean) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -35,64 +39,151 @@ export const useNotificationStore = create<NotificationState>()(
       unreadCount: 0,
       loading: false,
       error: null,
+      initialNotificationSent: false,
       
-      addNotification: (notificationData) => {
-        const newNotification: Notification = {
-          ...notificationData,
-          id: crypto.randomUUID(),
-          read: false,
-          created_at: new Date().toISOString(),
-        };
-        
-        set((state) => ({
-          notifications: [newNotification, ...state.notifications],
-          unreadCount: state.unreadCount + 1,
-        }));
+      addNotification: async (notificationData) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('notifications')
+            .insert([{
+              ...notificationData,
+              read: false
+            }])
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          set((state) => ({
+            notifications: [data, ...state.notifications],
+            unreadCount: state.unreadCount + 1,
+            loading: false,
+          }));
+          
+          return data;
+        } catch (error) {
+          console.error('Error adding notification:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
-      markAsRead: (id) => {
-        set((state) => {
-          const updated = state.notifications.map((notification) =>
-            notification.id === id && !notification.read
-              ? { ...notification, read: true }
-              : notification
-          );
+      markAsRead: async (id) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', id)
+            .select()
+            .single();
           
-          // Count how many notifications were actually marked as read
-          const diff = state.notifications.filter(n => n.id === id && !n.read).length;
+          if (error) throw error;
           
-          return {
-            notifications: updated,
-            unreadCount: Math.max(0, state.unreadCount - diff),
-          };
-        });
+          set((state) => {
+            const updated = state.notifications.map((notification) =>
+              notification.id === id && !notification.read
+                ? { ...notification, read: true }
+                : notification
+            );
+            
+            // Count how many notifications were actually marked as read
+            const diff = state.notifications.filter(n => n.id === id && !n.read).length;
+            
+            return {
+              notifications: updated,
+              unreadCount: Math.max(0, state.unreadCount - diff),
+              loading: false,
+            };
+          });
+        } catch (error) {
+          console.error('Error marking notification as read:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
-      markAllAsRead: () => {
-        set((state) => ({
-          notifications: state.notifications.map((notification) => ({
-            ...notification,
-            read: true,
-          })),
-          unreadCount: 0,
-        }));
+      markAllAsRead: async () => {
+        set({ loading: true, error: null });
+        try {
+          const user = supabase.auth.getUser();
+          if (!user) throw new Error('User not authenticated');
+          
+          const { error } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('read', false);
+          
+          if (error) throw error;
+          
+          set((state) => ({
+            notifications: state.notifications.map((notification) => ({
+              ...notification,
+              read: true,
+            })),
+            unreadCount: 0,
+            loading: false,
+          }));
+        } catch (error) {
+          console.error('Error marking all notifications as read:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
-      deleteNotification: (id) => {
-        set((state) => {
-          const notificationToDelete = state.notifications.find(n => n.id === id);
-          const unreadDelta = notificationToDelete && !notificationToDelete.read ? 1 : 0;
+      deleteNotification: async (id) => {
+        set({ loading: true, error: null });
+        try {
+          const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('id', id);
           
-          return {
-            notifications: state.notifications.filter((n) => n.id !== id),
-            unreadCount: Math.max(0, state.unreadCount - unreadDelta),
-          };
-        });
+          if (error) throw error;
+          
+          set((state) => {
+            const notificationToDelete = state.notifications.find(n => n.id === id);
+            const unreadDelta = notificationToDelete && !notificationToDelete.read ? 1 : 0;
+            
+            return {
+              notifications: state.notifications.filter((n) => n.id !== id),
+              unreadCount: Math.max(0, state.unreadCount - unreadDelta),
+              loading: false,
+            };
+          });
+        } catch (error) {
+          console.error('Error deleting notification:', error);
+          set({ error: error.message, loading: false });
+        }
+      },
+      
+      fetchNotifications: async () => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          
+          const unreadCount = (data || []).filter((n) => !n.read).length;
+          set({ 
+            notifications: data || [], 
+            unreadCount,
+            loading: false 
+          });
+        } catch (error) {
+          console.error('Error fetching notifications:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
       setNotifications: (notifications) => {
         const unreadCount = notifications.filter((n) => !n.read).length;
         set({ notifications, unreadCount });
+      },
+      
+      setInitialNotificationSent: (sent) => {
+        set({ initialNotificationSent: sent });
       },
       
       setLoading: (loading) => {

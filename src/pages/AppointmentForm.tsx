@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -30,6 +29,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAppointmentStore } from '@/store/appointmentStore';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres' }),
@@ -50,6 +50,7 @@ const AppointmentForm = () => {
   const { toast } = useToast();
   const { user } = useAuthStore();
   const { addAppointment } = useAppointmentStore();
+  const { addNotification } = useNotificationStore();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -62,7 +63,7 @@ const AppointmentForm = () => {
     },
   });
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     if (!user) {
       toast({
         title: 'Erro',
@@ -72,25 +73,41 @@ const AppointmentForm = () => {
       return;
     }
 
-    // Combine date and time
-    const dateTime = new Date(data.date);
-    const [hours, minutes] = data.time.split(':').map(Number);
-    dateTime.setHours(hours, minutes);
+    try {
+      // Combine date and time
+      const dateTime = new Date(data.date);
+      const [hours, minutes] = data.time.split(':').map(Number);
+      dateTime.setHours(hours, minutes);
 
-    addAppointment({
-      title: data.title,
-      location: data.location || '',
-      date: dateTime.toISOString(),
-      reminder: data.reminder,
-      user_id: user.id,
-    });
+      await addAppointment({
+        title: data.title,
+        location: data.location || '',
+        date: dateTime.toISOString(),
+        reminder: data.reminder,
+        user_id: user.id,
+      });
 
-    toast({
-      title: 'Sucesso!',
-      description: 'Compromisso adicionado com sucesso',
-    });
+      // Adicionar uma notificação para o novo compromisso
+      await addNotification({
+        user_id: user.id,
+        message: `Novo compromisso: ${data.title}`,
+        type: 'appointment',
+      });
 
-    navigate('/appointments');
+      toast({
+        title: 'Sucesso!',
+        description: 'Compromisso adicionado com sucesso',
+      });
+
+      navigate('/appointments');
+    } catch (error) {
+      console.error('Erro ao adicionar compromisso:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao adicionar o compromisso',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

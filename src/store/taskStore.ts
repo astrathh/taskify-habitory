@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 
 export type TaskPriority = 'baixa' | 'média' | 'alta';
 export type TaskStatus = 'pendente' | 'em progresso' | 'concluída';
@@ -22,9 +23,10 @@ interface TaskState {
   loading: boolean;
   error: string | null;
   
-  addTask: (task: Omit<Task, 'id' | 'created_at'>) => void;
-  updateTask: (id: string, updatedTask: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
+  addTask: (task: Omit<Task, 'id' | 'created_at'>) => Promise<void>;
+  updateTask: (id: string, updatedTask: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  fetchTasks: () => Promise<void>;
   setTasks: (tasks: Task[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -37,30 +39,88 @@ export const useTaskStore = create<TaskState>()(
       loading: false,
       error: null,
       
-      addTask: (taskData) => {
-        const newTask: Task = {
-          ...taskData,
-          id: crypto.randomUUID(),
-          created_at: new Date().toISOString(),
-        };
-        
-        set((state) => ({
-          tasks: [...state.tasks, newTask],
-        }));
+      addTask: async (taskData) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('tasks')
+            .insert([taskData])
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          set((state) => ({
+            tasks: [...state.tasks, data],
+            loading: false,
+          }));
+          
+          return data;
+        } catch (error) {
+          console.error('Error adding task:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
-      updateTask: (id, updatedTask) => {
-        set((state) => ({
-          tasks: state.tasks.map((task) =>
-            task.id === id ? { ...task, ...updatedTask } : task
-          ),
-        }));
+      updateTask: async (id, updatedTask) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('tasks')
+            .update(updatedTask)
+            .eq('id', id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          set((state) => ({
+            tasks: state.tasks.map((task) =>
+              task.id === id ? { ...task, ...data } : task
+            ),
+            loading: false,
+          }));
+        } catch (error) {
+          console.error('Error updating task:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
-      deleteTask: (id) => {
-        set((state) => ({
-          tasks: state.tasks.filter((task) => task.id !== id),
-        }));
+      deleteTask: async (id) => {
+        set({ loading: true, error: null });
+        try {
+          const { error } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('id', id);
+          
+          if (error) throw error;
+          
+          set((state) => ({
+            tasks: state.tasks.filter((task) => task.id !== id),
+            loading: false,
+          }));
+        } catch (error) {
+          console.error('Error deleting task:', error);
+          set({ error: error.message, loading: false });
+        }
+      },
+      
+      fetchTasks: async () => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          
+          set({ tasks: data || [], loading: false });
+        } catch (error) {
+          console.error('Error fetching tasks:', error);
+          set({ error: error.message, loading: false });
+        }
       },
       
       setTasks: (tasks) => {

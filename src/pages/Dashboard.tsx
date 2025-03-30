@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,10 +17,24 @@ const getCurrentMonth = () => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { tasks } = useTaskStore();
-  const { appointments } = useAppointmentStore();
+  const { tasks, fetchTasks } = useTaskStore();
+  const { appointments, fetchAppointments } = useAppointmentStore();
   const { monthlyProgress, createMonthlyProgress, setCurrentMonth } = useHabitStore();
-  const { addNotification } = useNotificationStore();
+  const { 
+    addNotification, 
+    fetchNotifications, 
+    initialNotificationSent,
+    setInitialNotificationSent 
+  } = useNotificationStore();
+
+  // Carregar dados ao montar o componente
+  useEffect(() => {
+    if (user) {
+      fetchTasks();
+      fetchAppointments();
+      fetchNotifications();
+    }
+  }, [user, fetchTasks, fetchAppointments, fetchNotifications]);
 
   // Initialize current month for habits if needed
   useEffect(() => {
@@ -39,18 +52,47 @@ const Dashboard = () => {
     }
   }, [user, createMonthlyProgress, monthlyProgress, setCurrentMonth]);
 
-  // Some demo data for the dashboard
+  // Send a welcome notification only for new users 
   useEffect(() => {
-    // Only add demo notification if we don't have any tasks yet
-    if (tasks.length === 0 && user) {
-      // Add a welcome notification
+    // Só adiciona notificação de boas-vindas se o usuário existir, não tiver nenhuma tarefa
+    // e ainda não tiver recebido a notificação inicial
+    if (user && tasks.length === 0 && !initialNotificationSent) {
       addNotification({
         user_id: user.id,
         message: 'Bem-vindo ao Taskify! Comece adicionando suas tarefas.',
         type: 'system',
+      }).then(() => {
+        // Marcar que a notificação inicial já foi enviada
+        setInitialNotificationSent(true);
       });
     }
-  }, [user, tasks.length, addNotification]);
+  }, [user, tasks.length, initialNotificationSent, addNotification, setInitialNotificationSent]);
+
+  // Verificar tarefas vencidas
+  useEffect(() => {
+    if (user && tasks.length > 0) {
+      const today = new Date();
+      
+      // Filtrar tarefas vencidas que estão pendentes
+      const overdueTasks = tasks.filter((task) => {
+        const dueDate = new Date(task.due_date);
+        return (
+          task.status !== 'concluída' && 
+          dueDate < today && 
+          dueDate.toDateString() !== today.toDateString()
+        );
+      });
+      
+      // Notificar sobre tarefas vencidas (limitando a não enviar notificações repetidas)
+      if (overdueTasks.length > 0) {
+        addNotification({
+          user_id: user.id,
+          message: `Você tem ${overdueTasks.length} tarefa(s) vencida(s)`,
+          type: 'task',
+        });
+      }
+    }
+  }, [user, tasks, addNotification]);
 
   // Task metrics
   const pendingTasks = tasks.filter((task) => task.status === 'pendente').length;

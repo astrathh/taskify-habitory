@@ -7,6 +7,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthStore } from "@/store/authStore";
+import { useTaskStore } from "@/store/taskStore";
+import { useAppointmentStore } from "@/store/appointmentStore";
+import { useNotificationStore } from "@/store/notificationStore";
 
 // Layouts
 import AppLayout from "@/components/layout/AppLayout";
@@ -23,7 +26,10 @@ import AppointmentForm from "./pages/AppointmentForm";
 import NotFound from "./pages/NotFound";
 
 const App = () => {
-  const { setSession, isAuthenticated } = useAuthStore();
+  const { setSession, isAuthenticated, user } = useAuthStore();
+  const { fetchTasks } = useTaskStore();
+  const { fetchAppointments } = useAppointmentStore();
+  const { fetchNotifications } = useNotificationStore();
 
   // Set up auth state listener
   useEffect(() => {
@@ -41,6 +47,16 @@ const App = () => {
 
     return () => subscription.unsubscribe();
   }, [setSession]);
+
+  // Carregar dados quando o usuário estiver autenticado
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Carregar dados iniciais do usuário
+      fetchTasks();
+      fetchAppointments();
+      fetchNotifications();
+    }
+  }, [isAuthenticated, user, fetchTasks, fetchAppointments, fetchNotifications]);
 
   return (
     <TooltipProvider>
