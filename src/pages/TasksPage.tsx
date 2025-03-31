@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { 
   Plus, Search, Filter, CheckCircle, Clock, AlertCircle, 
-  Edit, Trash2, CheckSquare, XSquare 
+  Edit, Trash2, CheckSquare, XSquare, ChevronDown 
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,6 +39,8 @@ const TasksPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<TaskStatus | 'todas'>('todas');
   const [filterPriority, setFilterPriority] = useState<TaskPriority | 'todas'>('todas');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -58,6 +68,21 @@ const TasksPage = () => {
         console.error('Error deleting task:', error);
       }
     }
+  };
+
+  const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
+    try {
+      await updateTask(taskId, { status: newStatus });
+      toast.success(`Status atualizado para: ${newStatus}`);
+    } catch (error) {
+      toast.error('Erro ao atualizar status');
+      console.error('Error updating task status:', error);
+    }
+  };
+
+  const openTaskModal = (task: Task) => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
   };
 
   // Filter and search tasks
@@ -92,8 +117,26 @@ const TasksPage = () => {
         return <Badge variant="default" className="bg-blue-600">Em Progresso</Badge>;
       case 'pendente':
         return <Badge variant="outline">Pendente</Badge>;
+      case 'cancelada':
+        return <Badge variant="default" className="bg-red-600">Cancelada</Badge>;
       default:
         return <Badge variant="outline">Indefinido</Badge>;
+    }
+  };
+
+  // Status colors para o dropdown
+  const getStatusClasses = (status: TaskStatus) => {
+    switch(status) {
+      case 'concluída':
+        return "text-green-600 hover:text-green-700 hover:bg-green-50";
+      case 'em progresso':
+        return "text-blue-600 hover:text-blue-700 hover:bg-blue-50";
+      case 'pendente':
+        return "text-gray-600 hover:text-gray-700 hover:bg-gray-50";
+      case 'cancelada':
+        return "text-red-600 hover:text-red-700 hover:bg-red-50";
+      default:
+        return "";
     }
   };
 
@@ -146,6 +189,9 @@ const TasksPage = () => {
             <DropdownMenuItem onClick={() => setFilterStatus('concluída')}>
               Concluída
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setFilterStatus('cancelada')}>
+              Cancelada
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         
@@ -194,15 +240,52 @@ const TasksPage = () => {
               </TableHeader>
               <TableBody>
                 {filteredTasks.map((task) => (
-                  <TableRow key={task.id}>
+                  <TableRow 
+                    key={task.id} 
+                    className="cursor-pointer hover:bg-muted/80"
+                    onClick={() => openTaskModal(task)}
+                  >
                     <TableCell className="font-medium">{task.title}</TableCell>
                     <TableCell>{task.category}</TableCell>
                     <TableCell>{getPriorityBadge(task.priority)}</TableCell>
-                    <TableCell>{getStatusBadge(task.status)}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="flex items-center gap-1">
+                          {getStatusBadge(task.status)}
+                          <ChevronDown className="h-4 w-4" />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem 
+                            className={getStatusClasses('pendente')}
+                            onClick={() => handleStatusChange(task.id, 'pendente')}
+                          >
+                            Pendente
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className={getStatusClasses('em progresso')}
+                            onClick={() => handleStatusChange(task.id, 'em progresso')}
+                          >
+                            Em Progresso
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className={getStatusClasses('concluída')}
+                            onClick={() => handleStatusChange(task.id, 'concluída')}
+                          >
+                            Concluída
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className={getStatusClasses('cancelada')}
+                            onClick={() => handleStatusChange(task.id, 'cancelada')}
+                          >
+                            Cancelada
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                     <TableCell className={isOverdue(task.due_date) && task.status !== 'concluída' ? 'text-red-600' : ''}>
                       {format(new Date(task.due_date), 'dd/MM/yyyy', { locale: ptBR })}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-2">
                         {task.status !== 'concluída' && (
                           <Button
@@ -217,7 +300,10 @@ const TasksPage = () => {
                         <Button 
                           variant="ghost"
                           size="icon"
-                          onClick={() => navigate(`/tasks/edit/${task.id}`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/tasks/edit/${task.id}`);
+                          }}
                           title="Editar tarefa"
                         >
                           <Edit className="h-4 w-4" />
@@ -225,7 +311,10 @@ const TasksPage = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(task.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(task.id);
+                          }}
                           title="Excluir tarefa"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -255,6 +344,77 @@ const TasksPage = () => {
           )}
         </>
       )}
+
+      {/* Modal com detalhes da tarefa */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{selectedTask?.title}</DialogTitle>
+            <DialogDescription>
+              Detalhes completos da tarefa
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTask && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium mb-1">Categoria</p>
+                  <p>{selectedTask.category}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Prioridade</p>
+                  <div>{getPriorityBadge(selectedTask.priority)}</div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Status</p>
+                  <div>{getStatusBadge(selectedTask.status)}</div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Data Limite</p>
+                  <p className={isOverdue(selectedTask.due_date) && selectedTask.status !== 'concluída' ? 'text-red-600' : ''}>
+                    {format(new Date(selectedTask.due_date), 'dd/MM/yyyy', { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium mb-1">Descrição</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedTask.description || "Nenhuma descrição fornecida."}
+                </p>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium mb-1">Data de Criação</p>
+                <p className="text-sm">
+                  {format(new Date(selectedTask.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setIsModalOpen(false)}
+            >
+              Fechar
+            </Button>
+            <Button
+              onClick={() => {
+                setIsModalOpen(false);
+                if (selectedTask) {
+                  navigate(`/tasks/edit/${selectedTask.id}`);
+                }
+              }}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

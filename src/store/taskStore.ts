@@ -4,13 +4,14 @@ import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
 
 export type TaskPriority = 'baixa' | 'média' | 'alta';
-export type TaskStatus = 'pendente' | 'em progresso' | 'concluída';
+export type TaskStatus = 'pendente' | 'em progresso' | 'concluída' | 'cancelada';
 export type TaskCategory = 'Financeiro' | 'Trabalho' | 'Pessoal' | 'Saúde' | 'Outro';
 
 export interface Task {
   id: string;
   user_id: string;
   title: string;
+  description?: string; // Campo adicionado para descrição
   category: TaskCategory;
   status: TaskStatus;
   priority: TaskPriority;
