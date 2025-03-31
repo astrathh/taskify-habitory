@@ -165,7 +165,7 @@ const HabitsPage = () => {
               </TableHeader>
               <TableBody>
                 {habits.map((habit) => {
-                  const progress = Math.min((habit.current / habit.target) * 100,, 100);
+                  const progress = Math.min((habit.current / habit.target) * 100, 100);
                   const isComplete = habit.current >= habit.target;
                   
                   return (
