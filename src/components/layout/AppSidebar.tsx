@@ -51,7 +51,10 @@ const AppSidebar = () => {
     <Sidebar>
       <SidebarContent>
         <div className="py-6 px-4 text-center">
-          <h1 className="text-2xl font-bold text-primary">Taskify</h1>
+          <div className="flex justify-center mb-2">
+            <img src="/logo.svg" alt="RevTasks Logo" className="h-10 w-10" />
+          </div>
+          <h1 className="text-2xl font-bold text-primary">RevTasks</h1>
           <p className="text-sm text-muted-foreground">Gerencie suas tarefas</p>
         </div>
         

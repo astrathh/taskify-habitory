@@ -1,14 +1,18 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Calendar, BarChart3, AlertCircle, Clock, Plus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTaskStore } from '@/store/taskStore';
 import { useAppointmentStore } from '@/store/appointmentStore';
 import { useHabitStore } from '@/store/habitStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useAuthStore } from '@/store/authStore';
+import TasksCharts from '@/components/dashboard/TasksCharts';
+import AppointmentsCharts from '@/components/dashboard/AppointmentsCharts';
+import HabitsCharts from '@/components/dashboard/HabitsCharts';
 
 // Helper function to get current month name
 const getCurrentMonth = () => {
@@ -20,13 +24,15 @@ const Dashboard = () => {
   const { user } = useAuthStore();
   const { tasks, fetchTasks } = useTaskStore();
   const { appointments, fetchAppointments } = useAppointmentStore();
-  const { monthlyProgress, createMonthlyProgress, setCurrentMonth } = useHabitStore();
+  const { monthlyProgress, createMonthlyProgress, setCurrentMonth, fetchHabits } = useHabitStore();
   const { 
     addNotification, 
     fetchNotifications, 
     initialNotificationSent,
     setInitialNotificationSent 
   } = useNotificationStore();
+  
+  const [activeTab, setActiveTab] = useState<string>("overview");
 
   // Carregar dados ao montar o componente
   useEffect(() => {
@@ -34,8 +40,9 @@ const Dashboard = () => {
       fetchTasks();
       fetchAppointments();
       fetchNotifications();
+      fetchHabits();
     }
-  }, [user, fetchTasks, fetchAppointments, fetchNotifications]);
+  }, [user, fetchTasks, fetchAppointments, fetchNotifications, fetchHabits]);
 
   // Initialize current month for habits if needed
   useEffect(() => {
@@ -60,7 +67,7 @@ const Dashboard = () => {
     if (user && tasks.length === 0 && !initialNotificationSent) {
       addNotification({
         user_id: user.id,
-        message: 'Bem-vindo ao Taskify! Comece adicionando suas tarefas.',
+        message: 'Bem-vindo ao RevTasks! Comece adicionando suas tarefas.',
         type: 'system',
       }).then(() => {
         // Marcar que a notificação inicial já foi enviada
@@ -193,126 +200,149 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Tarefas Recentes</CardTitle>
-            <CardDescription>
-              As últimas tarefas que você adicionou
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {tasks.length > 0 ? (
-              <div className="space-y-4">
-                {tasks.slice(0, 5).map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between p-3 border rounded-md"
-                  >
-                    <div className="flex items-center gap-3">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid grid-cols-4 w-full sm:w-auto">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="tasks">Tarefas</TabsTrigger>
+          <TabsTrigger value="appointments">Compromissos</TabsTrigger>
+          <TabsTrigger value="habits">Hábitos</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tarefas Recentes</CardTitle>
+                <CardDescription>
+                  As últimas tarefas que você adicionou
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {tasks.length > 0 ? (
+                  <div className="space-y-4">
+                    {tasks.slice(0, 5).map((task) => (
                       <div
-                        className={`w-2 h-2 rounded-full ${
-                          task.priority === 'alta'
-                            ? 'bg-destructive'
-                            : task.priority === 'média'
-                            ? 'bg-yellow-500'
-                            : 'bg-green-500'
-                        }`}
-                      />
-                      <div>
-                        <p className={`text-sm ${task.status === 'concluída' ? 'line-through text-muted-foreground' : ''}`}>
-                          {task.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {task.category} • Vence em{' '}
-                          {new Date(task.due_date).toLocaleDateString('pt-BR')}
-                        </p>
+                        key={task.id}
+                        className="flex items-center justify-between p-3 border rounded-md"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              task.priority === 'alta'
+                                ? 'bg-destructive'
+                                : task.priority === 'média'
+                                ? 'bg-yellow-500'
+                                : 'bg-green-500'
+                            }`}
+                          />
+                          <div>
+                            <p className={`text-sm ${task.status === 'concluída' ? 'line-through text-muted-foreground' : ''}`}>
+                              {task.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {task.category} • Vence em{' '}
+                              {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            task.status === 'concluída'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : task.status === 'em progresso'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                          }`}
+                        >
+                          {task.status}
+                        </span>
                       </div>
-                    </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        task.status === 'concluída'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : task.status === 'em progresso'
-                          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                      }`}
-                    >
-                      {task.status}
-                    </span>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <CheckCircle className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                <h3 className="text-lg font-medium">Nenhuma tarefa ainda</h3>
-                <p className="text-sm text-muted-foreground mt-1 mb-4">
-                  Adicione suas primeiras tarefas para começar
-                </p>
-                <Button onClick={() => navigate('/tasks/new')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Tarefa
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <CheckCircle className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                    <h3 className="text-lg font-medium">Nenhuma tarefa ainda</h3>
+                    <p className="text-sm text-muted-foreground mt-1 mb-4">
+                      Adicione suas primeiras tarefas para começar
+                    </p>
+                    <Button onClick={() => navigate('/tasks/new')}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Tarefa
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Próximos Compromissos</CardTitle>
-            <CardDescription>
-              Compromissos agendados para os próximos dias
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {upcomingAppointments.length > 0 ? (
-              <div className="space-y-4">
-                {upcomingAppointments.slice(0, 5).map((appointment) => (
-                  <div
-                    key={appointment.id}
-                    className="flex items-start gap-3 p-3 border rounded-md"
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <Clock className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{appointment.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(appointment.date).toLocaleDateString('pt-BR', {
-                          weekday: 'long',
-                          day: '2-digit',
-                          month: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
-                      {appointment.location && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Local: {appointment.location}
-                        </p>
-                      )}
-                    </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Próximos Compromissos</CardTitle>
+                <CardDescription>
+                  Compromissos agendados para os próximos dias
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {upcomingAppointments.length > 0 ? (
+                  <div className="space-y-4">
+                    {upcomingAppointments.slice(0, 5).map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        className="flex items-start gap-3 p-3 border rounded-md"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <Clock className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{appointment.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(appointment.date).toLocaleDateString('pt-BR', {
+                              weekday: 'long',
+                              day: '2-digit',
+                              month: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                          {appointment.location && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Local: {appointment.location}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Calendar className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                <h3 className="text-lg font-medium">Nenhum compromisso</h3>
-                <p className="text-sm text-muted-foreground mt-1 mb-4">
-                  Adicione seus próximos compromissos
-                </p>
-                <Button onClick={() => navigate('/appointments/new')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Compromisso
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <Calendar className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                    <h3 className="text-lg font-medium">Nenhum compromisso</h3>
+                    <p className="text-sm text-muted-foreground mt-1 mb-4">
+                      Adicione seus próximos compromissos
+                    </p>
+                    <Button onClick={() => navigate('/appointments/new')}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Compromisso
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="tasks">
+          <TasksCharts />
+        </TabsContent>
+        
+        <TabsContent value="appointments">
+          <AppointmentsCharts />
+        </TabsContent>
+        
+        <TabsContent value="habits">
+          <HabitsCharts />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
