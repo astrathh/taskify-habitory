@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Json } from '@/integrations/supabase/types';
 
 export interface Habit {
   id: string;
@@ -72,12 +73,12 @@ export const useHabitStore = create<HabitState>()(
             
           if (error) throw error;
           
-          // Convert database format to our app format
+          // Convert database format to our app format with proper type casting
           const formattedProgress: MonthlyProgress[] = data.map(item => ({
             id: item.id,
             user_id: item.user_id,
             month: item.month,
-            habits: item.habits as Habit[],
+            habits: (item.habits as unknown as Habit[]) || [],
             overall: item.overall || 0
           }));
           
@@ -117,7 +118,7 @@ export const useHabitStore = create<HabitState>()(
                 id: newProgress.id,
                 user_id: userId,
                 month,
-                habits: [],
+                habits: [] as unknown as Json,
                 overall: 0
               });
               
@@ -168,7 +169,7 @@ export const useHabitStore = create<HabitState>()(
           const { error } = await supabase
             .from('progress')
             .update({
-              habits: updatedHabits,
+              habits: updatedHabits as unknown as Json,
               overall: newOverall
             })
             .eq('id', monthProgress.id);
@@ -197,7 +198,7 @@ export const useHabitStore = create<HabitState>()(
           const { error } = await supabase
             .from('progress')
             .update({
-              habits,
+              habits: habits as unknown as Json,
               overall
             })
             .eq('id', progressId);
