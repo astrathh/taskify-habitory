@@ -24,6 +24,7 @@ import Dashboard from "./pages/Dashboard";
 import TasksPage from "./pages/TasksPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
 import HabitsPage from "./pages/HabitsPage";
+import HabitForm from "./pages/HabitForm";
 import TaskForm from "./pages/TaskForm";
 import AppointmentForm from "./pages/AppointmentForm";
 import NotFound from "./pages/NotFound";
@@ -89,6 +90,7 @@ const App = () => {
           <Route path="appointments/new" element={<AppointmentForm />} />
           <Route path="appointments/edit/:id" element={<AppointmentForm />} />
           <Route path="habits" element={<HabitsPage />} />
+          <Route path="habits/new" element={<HabitForm />} />
           <Route path="settings" element={<div>Settings Page</div>} />
         </Route>
         

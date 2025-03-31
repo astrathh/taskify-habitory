@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { useHabitStore } from '@/store/habitStore';
+import { useHabitStore, Habit } from '@/store/habitStore';
 import { 
   Table, TableBody, TableCaption, TableCell, 
   TableHead, TableHeader, TableRow 
@@ -15,15 +15,6 @@ import {
   ArrowUp, ArrowDown, CalendarRange 
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Habit {
-  id: string;
-  name: string;
-  target: number;
-  current: number;
-  unit: string;
-  streak: number;
-}
 
 const HabitsPage = () => {
   const navigate = useNavigate();
@@ -44,7 +35,7 @@ const HabitsPage = () => {
     id: ''
   };
   
-  const habits = currentMonthData.habits as unknown as Habit[] || [];
+  const habits = currentMonthData.habits || [];
 
   const handleIncrement = async (habitId: string) => {
     try {
@@ -174,7 +165,7 @@ const HabitsPage = () => {
               </TableHeader>
               <TableBody>
                 {habits.map((habit) => {
-                  const progress = Math.min((habit.current / habit.target) * 100, 100);
+                  const progress = Math.min((habit.current / habit.target) * 100,, 100);
                   const isComplete = habit.current >= habit.target;
                   
                   return (
