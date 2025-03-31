@@ -80,7 +80,8 @@ const TasksPage = () => {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  const isSearchActive = searchTerm || filterStatus !== 'todas' || filterPriority !== 'todas';
+  // Fix the type error by ensuring isSearchActive is always a boolean
+  const isSearchActive = Boolean(searchTerm) || filterStatus !== 'todas' || filterPriority !== 'todas';
 
   return (
     <div className="space-y-6">
