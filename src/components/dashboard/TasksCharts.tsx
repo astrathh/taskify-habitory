@@ -18,10 +18,10 @@ import {
   Legend,
 } from 'recharts';
 
-const COLORS = ['#7c3aed', '#ef4444', '#fbbf24', '#22c55e'];
+const COLORS = ['#cfff00', '#ef4444', '#fbbf24', '#22c55e'];
 const STATUS_COLORS = {
   'pendente': '#fbbf24',
-  'em progresso': '#7c3aed',
+  'em progresso': '#cfff00',
   'concluída': '#22c55e',
   'cancelada': '#ef4444'
 };
@@ -109,7 +109,7 @@ export const TasksCharts = () => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background shadow-lg p-2 border rounded-md">
-          <p className="font-medium">{`${payload[0].name}: ${payload[0].value}`}</p>
+          <p className="font-medium">{`${payload[0].name}: ${Math.round(payload[0].value)}`}</p>
           <p className="text-sm">{`${Math.round((payload[0].value / tasks.length) * 100)}%`}</p>
         </div>
       );
@@ -124,7 +124,7 @@ export const TasksCharts = () => {
       return (
         <div className="bg-background shadow-lg p-2 border rounded-md">
           <p className="font-medium">{`${data.name}`}</p>
-          <p className="text-sm">{`Total: ${data.value} tarefa(s)`}</p>
+          <p className="text-sm">{`Total: ${Math.round(data.value)} tarefa(s)`}</p>
         </div>
       );
     }
@@ -134,7 +134,7 @@ export const TasksCharts = () => {
   return (
     <div className="space-y-6">
       <div className="bg-primary py-4 px-6 rounded-lg">
-        <h2 className="text-xl font-bold text-center text-white">ANÁLISE DE TAREFAS</h2>
+        <h2 className="text-xl font-bold text-center text-primary-foreground">ANÁLISE DE TAREFAS</h2>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -155,7 +155,7 @@ export const TasksCharts = () => {
                   outerRadius={90}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
                 >
                   {tasksByPriority.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -183,9 +183,9 @@ export const TasksCharts = () => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis />
+                <YAxis tickFormatter={(value) => Math.round(value)} />
                 <Tooltip formatter={(value, name, props) => {
-                  return [`${value} tarefa(s)`, `${props.payload.name}`];
+                  return [`${Math.round(Number(value))} tarefa(s)`, `${props.payload.name}`];
                 }} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {tasksByStatus.map((entry, index) => (
@@ -212,7 +212,7 @@ export const TasksCharts = () => {
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
               >
-                <XAxis type="number" />
+                <XAxis type="number" tickFormatter={(value) => Math.round(value)} />
                 <YAxis 
                   dataKey="name" 
                   type="category"
@@ -220,7 +220,7 @@ export const TasksCharts = () => {
                   width={70}
                 />
                 <Tooltip content={<CustomCategoryTooltip />} />
-                <Bar dataKey="value" fill="#7c3aed" barSize={20} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="value" fill="#cfff00" barSize={20} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

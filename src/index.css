@@ -14,8 +14,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 65 100% 50%; /* Alterado de roxo para #cfff00 */
+    --primary-foreground: 0 0% 0%; /* Alterado para preto */
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -31,18 +31,18 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 262 83% 58%;
+    --ring: 65 100% 50%; /* Alterado de roxo para #cfff00 */
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary: 65 100% 50%; /* Alterado de roxo para #cfff00 */
+    --sidebar-primary-foreground: 0 0% 0%; /* Alterado para preto */
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-ring: 65 100% 50%; /* Alterado de roxo para #cfff00 */
   }
 
   .dark {
@@ -55,8 +55,8 @@
     --popover: 240 5.9% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 65 100% 50%; /* Alterado de roxo para #cfff00 */
+    --primary-foreground: 0 0% 0%; /* Alterado para preto */
 
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
@@ -72,16 +72,16 @@
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 262 83% 58%;
+    --ring: 65 100% 50%; /* Alterado de roxo para #cfff00 */
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 65 100% 50%; /* Alterado de roxo para #cfff00 */
+    --sidebar-primary-foreground: 0 0% 0%; /* Alterado para preto */
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-ring: 65 100% 50%; /* Alterado de roxo para #cfff00 */
   }
 }
 

@@ -20,7 +20,7 @@ import {
   Legend,
 } from 'recharts';
 
-const COLORS = ['#7c3aed', '#ef4444', '#fbbf24', '#22c55e'];
+const COLORS = ['#cfff00', '#ef4444', '#fbbf24', '#22c55e'];
 
 export const AppointmentsCharts = () => {
   const { appointments } = useAppointmentStore();
@@ -98,7 +98,7 @@ export const AppointmentsCharts = () => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background shadow-lg p-2 border rounded-md">
-          <p className="font-medium">{`${label}: ${payload[0].value}`}</p>
+          <p className="font-medium">{`${label}: ${Math.round(payload[0].value)}`}</p>
         </div>
       );
     }
@@ -127,12 +127,12 @@ export const AppointmentsCharts = () => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis />
+                <YAxis tickFormatter={(value) => Math.round(value)} />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 
                   type="monotone" 
                   dataKey="value" 
-                  stroke="#7c3aed" 
+                  stroke="#cfff00" 
                   strokeWidth={2}
                   activeDot={{ r: 8 }} 
                 />
@@ -159,13 +159,13 @@ export const AppointmentsCharts = () => {
                   outerRadius={90}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
                 >
                   {appointmentsDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -187,8 +187,8 @@ export const AppointmentsCharts = () => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <YAxis tickFormatter={(value) => Math.round(value)} />
+                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
                 <Bar dataKey="value" fill="#22c55e" barSize={35} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

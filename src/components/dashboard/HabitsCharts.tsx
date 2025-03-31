@@ -25,7 +25,7 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
 
-const COLORS = ['#7c3aed', '#a7f3d0', '#fbbf24'];
+const COLORS = ['#cfff00', '#a7f3d0', '#fbbf24'];
 
 export const HabitsCharts = () => {
   const { monthlyProgress } = useHabitStore();
@@ -93,7 +93,7 @@ export const HabitsCharts = () => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background shadow-lg p-2 border rounded-md">
-          <p className="font-medium">{`${payload[0].name}: ${payload[0].value}`}</p>
+          <p className="font-medium">{`${payload[0].name}: ${Math.round(payload[0].value)}`}</p>
           <p className="text-sm">{`${payload[0].payload.percentage}%`}</p>
         </div>
       );
@@ -122,15 +122,15 @@ export const HabitsCharts = () => {
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
               >
-                <XAxis type="number" />
+                <XAxis type="number" tickFormatter={(value) => Math.round(value)} />
                 <YAxis 
                   dataKey="name" 
                   type="category"
                   tick={{ fontSize: 12 }}
                   width={70}
                 />
-                <Tooltip />
-                <Bar dataKey="value" fill="#7c3aed" barSize={20} radius={[0, 4, 4, 0]} />
+                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Hábitos']} />
+                <Bar dataKey="value" fill="#cfff00" barSize={20} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -151,8 +151,8 @@ export const HabitsCharts = () => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis unit="%" domain={[0, 125]} />
-                <Tooltip formatter={(value) => [`${value}%`, 'Progresso']} />
+                <YAxis unit="%" domain={[0, 125]} tickFormatter={(value) => Math.round(value)} />
+                <Tooltip formatter={(value) => [`${Math.round(Number(value))}%`, 'Progresso']} />
                 <Bar dataKey="value" fill="#a7f3d0" barSize={35} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -177,7 +177,7 @@ export const HabitsCharts = () => {
                   outerRadius={90}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
+                  label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
                 >
                   {annualProgressData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
