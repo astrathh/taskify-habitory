@@ -92,6 +92,18 @@ export const TasksCharts = () => {
     })).sort((a, b) => b.value - a.value).slice(0, 10); // Top 10 categories
   }, [tasks]);
   
+  // Data for task details
+  const taskDetails = useMemo(() => {
+    return tasks.map(task => ({
+      name: task.title,
+      value: 1,
+      category: task.category,
+      status: task.status,
+      priority: task.priority,
+      dueDate: new Date(task.due_date).toLocaleDateString('pt-BR')
+    }));
+  }, [tasks]);
+  
   // Custom Tooltip for the Pie Chart
   const CustomPieTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -99,6 +111,20 @@ export const TasksCharts = () => {
         <div className="bg-background shadow-lg p-2 border rounded-md">
           <p className="font-medium">{`${payload[0].name}: ${payload[0].value}`}</p>
           <p className="text-sm">{`${Math.round((payload[0].value / tasks.length) * 100)}%`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+  
+  // Custom Tooltip for the Category Chart
+  const CustomCategoryTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      return (
+        <div className="bg-background shadow-lg p-2 border rounded-md">
+          <p className="font-medium">{`${data.name}`}</p>
+          <p className="text-sm">{`Total: ${data.value} tarefa(s)`}</p>
         </div>
       );
     }
@@ -158,12 +184,15 @@ export const TasksCharts = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip />
+                <Tooltip formatter={(value, name, props) => {
+                  return [`${value} tarefa(s)`, `${props.payload.name}`];
+                }} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   {tasksByStatus.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
+                <Legend />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -190,7 +219,7 @@ export const TasksCharts = () => {
                   tick={{ fontSize: 12 }}
                   width={70}
                 />
-                <Tooltip />
+                <Tooltip content={<CustomCategoryTooltip />} />
                 <Bar dataKey="value" fill="#7c3aed" barSize={20} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
