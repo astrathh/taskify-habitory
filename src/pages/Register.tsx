@@ -65,7 +65,11 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-50 to-blue-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">Taskify</h1>
+          <img
+            src="https://storage.googleapis.com/msgsndr/S7HEFAz97UKuC8NLHMmI/media/680ff53033fee486c04530f8.png"
+            alt="Logo RevTasks"
+            className="mx-auto h-12"
+          />
           <p className="text-muted-foreground">
             A plataforma completa para gerenciar suas tarefas
           </p>
