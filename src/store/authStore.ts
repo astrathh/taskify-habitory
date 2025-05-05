@@ -8,18 +8,21 @@ export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
+  error: string | null; // Add missing error property
   checkAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   loginWithGithub: () => Promise<void>;
+  clearError: () => void; // Add missing clearError method
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   loading: true,
+  error: null, // Initialize error state
 
   checkAuth: async () => {
     try {
@@ -43,7 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     try {
-      set({ loading: true });
+      set({ loading: true, error: null });
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -61,14 +64,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Erro ao realizar login');
-      set({ loading: false });
+      set({ loading: false, error: error.message });
       throw error;
     }
   },
 
   register: async (email, password, name) => {
     try {
-      set({ loading: true });
+      set({ loading: true, error: null });
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -91,7 +94,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: any) {
       console.error('Registration error:', error);
       toast.error(error.message || 'Erro ao criar conta');
-      set({ loading: false });
+      set({ loading: false, error: error.message });
       throw error;
     }
   },
@@ -111,6 +114,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   loginWithGoogle: async () => {
     try {
+      set({ error: null }); // Clear any existing errors
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -122,11 +126,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: any) {
       console.error('Google login error:', error);
       toast.error(error.message || 'Erro ao realizar login com Google');
+      set({ error: error.message });
     }
   },
 
   loginWithGithub: async () => {
     try {
+      set({ error: null }); // Clear any existing errors
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
@@ -138,6 +144,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: any) {
       console.error('Github login error:', error);
       toast.error(error.message || 'Erro ao realizar login com Github');
+      set({ error: error.message });
     }
+  },
+
+  // Add clearError method
+  clearError: () => {
+    set({ error: null });
   },
 }));

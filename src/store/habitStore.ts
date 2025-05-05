@@ -13,6 +13,14 @@ export interface Habit {
   current: number;
   unit: string;
   streak: number;
+  user_id?: string;
+  description?: string;
+  category?: string;
+  status?: string;
+  recurring_days?: number[];
+  created_at?: string;
+  last_completed?: string;
+  last_skipped?: string;
 }
 
 export interface MonthlyProgress {
@@ -28,6 +36,7 @@ interface HabitState {
   currentMonth: string;
   loading: boolean;
   error: string | null;
+  habits: Habit[]; // Add missing habits array
   
   fetchHabits: () => Promise<void>;
   addHabit: (habit: Omit<Habit, 'id' | 'current' | 'streak'>) => Promise<void>;
@@ -38,6 +47,12 @@ interface HabitState {
   setMonthlyProgress: (progress: MonthlyProgress[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  
+  // Add missing functions that trackableItemStore uses
+  completeHabit: (id: string) => Promise<void>;
+  skipHabit: (id: string) => Promise<void>;
+  updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
 }
 
 const calculateOverallProgress = (habits: Habit[]): number => {
@@ -58,6 +73,7 @@ export const useHabitStore = create<HabitState>()(
       currentMonth: format(new Date(), 'MMMM yyyy', { locale: ptBR }),
       loading: false,
       error: null,
+      habits: [], // Initialize habits array
       
       fetchHabits: async () => {
         const { user } = (await supabase.auth.getUser()).data;
@@ -91,6 +107,16 @@ export const useHabitStore = create<HabitState>()(
           if (!monthExists) {
             await get().createMonthlyProgress(currentMonth, user.id);
           }
+          
+          // Extract all habits from all months for easy access
+          const allHabits = formattedProgress.flatMap(p => p.habits.map(h => ({
+            ...h,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+            status: h.current >= h.target ? 'completed' : 'active'
+          })));
+          
+          set({ habits: allHabits });
         } catch (error) {
           console.error('Error fetching habits:', error);
           set({ error: 'Falha ao carregar hábitos' });
@@ -159,7 +185,13 @@ export const useHabitStore = create<HabitState>()(
           target: habit.target,
           unit: habit.unit,
           current: 0,
-          streak: 0
+          streak: 0,
+          description: habit.description,
+          category: habit.category,
+          status: 'active',
+          recurring_days: habit.recurring_days,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
         };
         
         const updatedHabits = [...monthProgress.habits, newHabit];
@@ -186,7 +218,9 @@ export const useHabitStore = create<HabitState>()(
                 };
               }
               return progress;
-            })
+            }),
+            // Also update the habits array
+            habits: [...state.habits, newHabit]
           }));
         } catch (error) {
           console.error('Error adding habit:', error);
@@ -215,6 +249,11 @@ export const useHabitStore = create<HabitState>()(
                 };
               }
               return progress;
+            }),
+            // Update the habits array too
+            habits: state.habits.map(h => {
+              const updatedHabit = habits.find(nh => nh.id === h.id);
+              return updatedHabit || h;
             })
           }));
         } catch (error) {
@@ -238,8 +277,12 @@ export const useHabitStore = create<HabitState>()(
             return progress;
           });
           
+          // Also update the habits array
+          const updatedHabits = state.habits.filter(h => h.name !== habitName);
+          
           return {
             monthlyProgress: updatedProgress,
+            habits: updatedHabits
           };
         });
       },
@@ -254,6 +297,178 @@ export const useHabitStore = create<HabitState>()(
       
       setError: (error) => {
         set({ error });
+      },
+      
+      // Implement missing methods
+      completeHabit: async (id: string) => {
+        try {
+          const habitIndex = get().monthlyProgress.findIndex(
+            p => p.habits.some(h => h.id === id)
+          );
+          
+          if (habitIndex < 0) {
+            throw new Error('Habit not found');
+          }
+          
+          const progress = get().monthlyProgress[habitIndex];
+          const habitIdx = progress.habits.findIndex(h => h.id === id);
+          
+          if (habitIdx < 0) {
+            throw new Error('Habit not found in progress');
+          }
+          
+          const updatedHabits = [...progress.habits];
+          const habit = updatedHabits[habitIdx];
+          
+          updatedHabits[habitIdx] = {
+            ...habit,
+            current: Math.min(habit.current + 1, habit.target), // Increment but don't exceed target
+            streak: habit.streak + 1,
+            last_completed: new Date().toISOString(),
+            status: (habit.current + 1) >= habit.target ? 'completed' : 'active'
+          };
+          
+          const newOverall = calculateOverallProgress(updatedHabits);
+          
+          await get().updateHabitProgress(progress.id, updatedHabits, newOverall);
+          
+          // Also update habits array
+          set((state) => ({
+            habits: state.habits.map(h => 
+              h.id === id 
+                ? { 
+                    ...h, 
+                    current: Math.min(h.current + 1, h.target),
+                    streak: h.streak + 1,
+                    last_completed: new Date().toISOString(),
+                    status: (h.current + 1) >= h.target ? 'completed' : 'active'
+                  } 
+                : h
+            )
+          }));
+          
+        } catch (error) {
+          console.error('Error completing habit:', error);
+          throw error;
+        }
+      },
+      
+      skipHabit: async (id: string) => {
+        try {
+          const habitIndex = get().monthlyProgress.findIndex(
+            p => p.habits.some(h => h.id === id)
+          );
+          
+          if (habitIndex < 0) {
+            throw new Error('Habit not found');
+          }
+          
+          const progress = get().monthlyProgress[habitIndex];
+          const habitIdx = progress.habits.findIndex(h => h.id === id);
+          
+          if (habitIdx < 0) {
+            throw new Error('Habit not found in progress');
+          }
+          
+          const updatedHabits = [...progress.habits];
+          
+          updatedHabits[habitIdx] = {
+            ...updatedHabits[habitIdx],
+            streak: 0, // Reset streak on skip
+            last_skipped: new Date().toISOString(),
+            status: 'skipped'
+          };
+          
+          const newOverall = calculateOverallProgress(updatedHabits);
+          
+          await get().updateHabitProgress(progress.id, updatedHabits, newOverall);
+          
+          // Also update habits array
+          set((state) => ({
+            habits: state.habits.map(h => 
+              h.id === id 
+                ? { 
+                    ...h, 
+                    streak: 0,
+                    last_skipped: new Date().toISOString(),
+                    status: 'skipped'
+                  } 
+                : h
+            )
+          }));
+          
+        } catch (error) {
+          console.error('Error skipping habit:', error);
+          throw error;
+        }
+      },
+      
+      updateHabit: async (id: string, updates: Partial<Habit>) => {
+        try {
+          const habitIndex = get().monthlyProgress.findIndex(
+            p => p.habits.some(h => h.id === id)
+          );
+          
+          if (habitIndex < 0) {
+            throw new Error('Habit not found');
+          }
+          
+          const progress = get().monthlyProgress[habitIndex];
+          const habitIdx = progress.habits.findIndex(h => h.id === id);
+          
+          if (habitIdx < 0) {
+            throw new Error('Habit not found in progress');
+          }
+          
+          const updatedHabits = [...progress.habits];
+          
+          updatedHabits[habitIdx] = {
+            ...updatedHabits[habitIdx],
+            ...updates
+          };
+          
+          const newOverall = calculateOverallProgress(updatedHabits);
+          
+          await get().updateHabitProgress(progress.id, updatedHabits, newOverall);
+          
+          // Also update habits array
+          set((state) => ({
+            habits: state.habits.map(h => 
+              h.id === id ? { ...h, ...updates } : h
+            )
+          }));
+          
+        } catch (error) {
+          console.error('Error updating habit:', error);
+          throw error;
+        }
+      },
+      
+      deleteHabit: async (id: string) => {
+        try {
+          const habitIndex = get().monthlyProgress.findIndex(
+            p => p.habits.some(h => h.id === id)
+          );
+          
+          if (habitIndex < 0) {
+            throw new Error('Habit not found');
+          }
+          
+          const progress = get().monthlyProgress[habitIndex];
+          const updatedHabits = progress.habits.filter(h => h.id !== id);
+          const newOverall = calculateOverallProgress(updatedHabits);
+          
+          await get().updateHabitProgress(progress.id, updatedHabits, newOverall);
+          
+          // Also update habits array
+          set((state) => ({
+            habits: state.habits.filter(h => h.id !== id)
+          }));
+          
+        } catch (error) {
+          console.error('Error deleting habit:', error);
+          throw error;
+        }
       },
     }),
     {

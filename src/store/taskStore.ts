@@ -11,12 +11,13 @@ export interface Task {
   id: string;
   user_id: string;
   title: string;
-  description?: string; // Campo adicionado para descrição
+  description?: string;
   category: TaskCategory;
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string;
   created_at: string;
+  updated_at?: string; // Add missing updated_at field
 }
 
 interface TaskState {
@@ -81,7 +82,7 @@ export const useTaskStore = create<TaskState>()(
           
           set((state) => ({
             tasks: state.tasks.map((task) =>
-              task.id === id ? { ...task, ...typedTask } : task
+              task.id === id ? { ...task, ...typedTask, updated_at: new Date().toISOString() } : task
             ),
             loading: false,
           }));
@@ -121,8 +122,11 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Cast the data to the correct type
-          const typedTasks = (data || []) as unknown as Task[];
+          // Cast the data to the correct type and add updated_at if not present
+          const typedTasks = (data || []).map(task => ({
+            ...task,
+            updated_at: task.updated_at || task.created_at
+          })) as unknown as Task[];
           
           set({ tasks: typedTasks, loading: false });
         } catch (error) {
