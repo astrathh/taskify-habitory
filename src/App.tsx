@@ -1,6 +1,6 @@
 
 import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { useAuthStore } from '@/store/authStore';
@@ -40,38 +40,36 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 function App() {
-  const { initializeAuth } = useAuthStore();
+  const { checkAuth } = useAuthStore();
   
   useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
+    checkAuth();
+  }, [checkAuth]);
   
   return (
     <ThemeProvider defaultTheme="dark" storageKey="theme">
-      <BrowserRouter>
-        <Suspense fallback={<div>Carregando...</div>}>
-          <Routes>
-            <Route index element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            
-            <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="tasks" element={<TrackablePage />} />
-              <Route path="tasks/new" element={<TaskForm />} />
-              <Route path="tasks/edit/:id" element={<TaskForm />} />
-              <Route path="appointments" element={<AppointmentsPage />} />
-              <Route path="appointments/new" element={<AppointmentForm />} />
-              <Route path="appointments/edit/:id" element={<AppointmentForm />} />
-              <Route path="habits/new" element={<HabitForm />} />
-              <Route path="habits/edit/:id" element={<HabitForm />} />
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+      <Suspense fallback={<div>Carregando...</div>}>
+        <Routes>
+          <Route index element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          
+          <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="tasks" element={<TrackablePage />} />
+            <Route path="tasks/new" element={<TaskForm />} />
+            <Route path="tasks/edit/:id" element={<TaskForm />} />
+            <Route path="appointments" element={<AppointmentsPage />} />
+            <Route path="appointments/new" element={<AppointmentForm />} />
+            <Route path="appointments/edit/:id" element={<AppointmentForm />} />
+            <Route path="habits/new" element={<HabitForm />} />
+            <Route path="habits/edit/:id" element={<HabitForm />} />
+          </Route>
+          
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
       <Toaster />
     </ThemeProvider>
   );

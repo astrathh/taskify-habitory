@@ -1,188 +1,155 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useAppointmentStore } from '@/store/appointmentStore';
-import { format, subMonths, getMonth, getYear, parseISO, isToday } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  CartesianGrid,
-  Legend,
-} from 'recharts';
 
-const COLORS = ['#cfff00', '#fbbf24', '#f87171', '#60a5fa'];
+const COLORS = ['#CFff00', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
 
 const AppointmentsCharts = () => {
   const { appointments } = useAppointmentStore();
-  
-  // Data for appointments by category
-  const appointmentsByCategoryData = useMemo(() => {
-    const categories = {};
+
+  // Convert date objects to the month name
+  const getMonthName = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('pt-BR', { month: 'short' });
+  };
+
+  // Group appointments by month
+  const appointmentsByMonth = useMemo(() => {
+    const groupedByMonth: Record<string, number> = {};
     
-    appointments.forEach(appointment => {
-      const category = appointment.category || 'Sem categoria';
-      categories[category] = (categories[category] || 0) + 1;
+    appointments.forEach((appointment) => {
+      const month = getMonthName(appointment.date);
+      if (!groupedByMonth[month]) {
+        groupedByMonth[month] = 0;
+      }
+      groupedByMonth[month] += 1;
     });
     
-    return Object.keys(categories).map(category => ({
-      name: category,
-      value: categories[category]
+    return Object.entries(groupedByMonth).map(([month, count]) => ({
+      month,
+      count: Math.round(count) // Ensure count is an integer
     }));
   }, [appointments]);
-  
-  // Data for appointments by month
-  const appointmentsByMonthData = useMemo(() => {
-    const months = {};
-    const today = new Date();
+
+  // Group appointments by location (or "Não definido" if no location)
+  const appointmentsByLocation = useMemo(() => {
+    const groupedByLocation: Record<string, number> = {};
     
-    // Initialize months (current month and next 5 months)
-    for (let i = 0; i < 6; i++) {
-      const date = new Date(today);
-      date.setMonth(today.getMonth() + i);
-      const monthKey = format(date, 'MM-yyyy');
-      const monthName = format(date, 'MMM', { locale: ptBR });
-      months[monthKey] = { name: monthName, value: 0 };
-    }
-    
-    appointments.forEach(appointment => {
-      try {
-        const appointmentDate = parseISO(appointment.date);
-        const monthKey = format(appointmentDate, 'MM-yyyy');
-        
-        // Only count future appointments in the next 6 months
-        if (monthKey in months) {
-          months[monthKey].value++;
-        }
-      } catch (error) {
-        console.error('Error parsing appointment date:', error);
+    appointments.forEach((appointment) => {
+      const location = appointment.location || "Não definido";
+      if (!groupedByLocation[location]) {
+        groupedByLocation[location] = 0;
       }
+      groupedByLocation[location] += 1;
     });
     
-    return Object.values(months);
-  }, [appointments]);
-  
-  // Distribution of appointments throughout the week
-  const appointmentsWeekdayData = useMemo(() => {
-    const weekdays = {
-      'Dom': 0,
-      'Seg': 0,
-      'Ter': 0,
-      'Qua': 0,
-      'Qui': 0,
-      'Sex': 0,
-      'Sáb': 0,
-    };
-    
-    appointments.forEach(appointment => {
-      try {
-        const appointmentDate = parseISO(appointment.date);
-        const weekday = format(appointmentDate, 'EEE', { locale: ptBR });
-        weekdays[weekday]++;
-      } catch (error) {
-        console.error('Error parsing appointment date:', error);
-      }
-    });
-    
-    return Object.keys(weekdays).map(day => ({
-      name: day,
-      value: weekdays[day]
+    return Object.entries(groupedByLocation).map(([name, value]) => ({
+      name,
+      value: Math.round(value) // Ensure value is an integer
     }));
   }, [appointments]);
+
+  // Ensure data exists before rendering
+  const hasPieData = appointmentsByLocation.length > 0;
+  const hasBarData = appointmentsByMonth.length > 0;
+
+  // Calculate future vs past appointments
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
+  const futureAppointments = appointments.filter(
+    (appointment) => new Date(appointment.date) >= today
+  ).length;
+  
+  const pastAppointments = appointments.filter(
+    (appointment) => new Date(appointment.date) < today
+  ).length;
+  
+  const timelineData = [
+    { name: 'Passados', value: Math.round(pastAppointments) },
+    { name: 'Futuros', value: Math.round(futureAppointments) }
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="bg-lime-300 dark:bg-lime-700 py-4 px-6 rounded-lg">
-        <h2 className="text-xl font-bold text-center text-black dark:text-white">ANÁLISE DE COMPROMISSOS</h2>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>COMPROMISSOS POR CATEGORIA</CardTitle>
-            <CardDescription>
-              Distribuição dos compromissos por categoria
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Compromissos por Mês</CardTitle>
+          <CardDescription>Distribuição de compromissos ao longo dos meses</CardDescription>
+        </CardHeader>
+        <CardContent className="h-80">
+          {hasBarData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={appointmentsByMonth}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis allowDecimals={false} /> {/* Ensure only integers on Y axis */}
+                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
+                <Bar dataKey="count" fill="#cfff00" name="Compromissos" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              Nenhum dado disponível
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Compromissos por Local</CardTitle>
+          <CardDescription>Distribuição de compromissos por localização</CardDescription>
+        </CardHeader>
+        <CardContent className="h-80">
+          {hasPieData ? (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={appointmentsByCategoryData}
+                  data={appointmentsByLocation}
                   cx="50%"
                   cy="50%"
+                  labelLine={true}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, value, percent }) => 
-                    `${name}: ${Math.round(value)} (${Math.round(percent * 100)}%)`
-                  }
+                  nameKey="name"
+                  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
-                  {appointmentsByCategoryData.map((entry, index) => (
+                  {appointmentsByLocation.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${Math.round(Number(value))}`, 'Compromissos']} />
+                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
               </PieChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>COMPROMISSOS FUTUROS</CardTitle>
-            <CardDescription>
-              Distribuição de compromissos nos próximos meses
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={appointmentsByMonthData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => `${Math.round(value)}`} />
-                <Tooltip formatter={(value) => [`${Math.round(Number(value))}`, 'Compromissos']} />
-                <Bar dataKey="value" fill="#cfff00" barSize={35} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        
-        <Card className="md:col-span-2 lg:col-span-1">
-          <CardHeader>
-            <CardTitle>DISTRIBUIÇÃO NA SEMANA</CardTitle>
-            <CardDescription>
-              Frequência de compromissos por dia da semana
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={appointmentsWeekdayData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => `${Math.round(value)}`} />
-                <Tooltip formatter={(value) => [`${Math.round(Number(value))}`, 'Compromissos']} />
-                <Bar dataKey="value" fill="#60a5fa" barSize={35} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+          ) : (
+            <div className="h-full flex items-center justify-center text-muted-foreground">
+              Nenhum dado disponível
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="md:col-span-2">
+        <CardHeader>
+          <CardTitle>Linha do Tempo de Compromissos</CardTitle>
+          <CardDescription>Compromissos passados vs. futuros</CardDescription>
+        </CardHeader>
+        <CardContent className="h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={timelineData} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" allowDecimals={false} /> {/* Ensure only integers on X axis */}
+              <YAxis type="category" dataKey="name" />
+              <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
+              <Bar dataKey="value" fill="#cfff00" name="Compromissos" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     </div>
   );
 };
