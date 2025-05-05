@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppointmentStore } from '@/store/appointmentStore';
-import { format, subMonths, isThisMonth, isAfter, isBefore, endOfMonth, startOfMonth, differenceInDays } from 'date-fns';
+import { format, subMonths, getMonth, getYear, parseISO, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   BarChart,
@@ -20,153 +20,118 @@ import {
   Legend,
 } from 'recharts';
 
-const COLORS = ['#cfff00', '#ef4444', '#fbbf24', '#22c55e'];
+const COLORS = ['#cfff00', '#fbbf24', '#f87171', '#60a5fa'];
 
-export const AppointmentsCharts = () => {
+const AppointmentsCharts = () => {
   const { appointments } = useAppointmentStore();
   
-  // Data for appointments by month
-  const appointmentsByMonth = useMemo(() => {
-    const months = Array.from({ length: 6 }, (_, i) => {
-      const date = subMonths(new Date(), i);
-      return {
-        name: format(date, 'MMM', { locale: ptBR }),
-        month: date.getMonth(),
-        year: date.getFullYear(),
-      };
-    }).reverse();
-    
-    const data = months.map(({ name, month, year }) => {
-      const count = appointments.filter(appointment => {
-        const appointmentDate = new Date(appointment.date);
-        return appointmentDate.getMonth() === month && appointmentDate.getFullYear() === year;
-      }).length;
-      
-      return {
-        name,
-        value: count,
-      };
-    });
-    
-    return data;
-  }, [appointments]);
-  
-  // Data for appointments distribution
-  const appointmentsDistribution = useMemo(() => {
-    const now = new Date();
-    const pastAppointments = appointments.filter(appointment => 
-      isBefore(new Date(appointment.date), now)
-    ).length;
-    
-    const currentMonthAppointments = appointments.filter(appointment => 
-      isThisMonth(new Date(appointment.date))
-    ).length;
-    
-    const futureAppointments = appointments.filter(appointment => 
-      isAfter(new Date(appointment.date), now)
-    ).length;
-    
-    return [
-      { name: 'Passados', value: pastAppointments },
-      { name: 'Este Mês', value: currentMonthAppointments },
-      { name: 'Futuros', value: futureAppointments },
-    ];
-  }, [appointments]);
-  
-  // Data for appointments by day of week
-  const appointmentsByDayOfWeek = useMemo(() => {
-    const daysOfWeek = [
-      'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'
-    ];
-    
-    const counts = Array(7).fill(0);
+  // Data for appointments by category
+  const appointmentsByCategoryData = useMemo(() => {
+    const categories = {};
     
     appointments.forEach(appointment => {
-      const date = new Date(appointment.date);
-      const dayOfWeek = date.getDay();
-      counts[dayOfWeek]++;
+      const category = appointment.category || 'Sem categoria';
+      categories[category] = (categories[category] || 0) + 1;
     });
     
-    return daysOfWeek.map((name, index) => ({
-      name,
-      value: counts[index],
+    return Object.keys(categories).map(category => ({
+      name: category,
+      value: categories[category]
     }));
   }, [appointments]);
   
-  // Custom Tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background shadow-lg p-2 border rounded-md">
-          <p className="font-medium">{`${label}: ${Math.round(payload[0].value)}`}</p>
-        </div>
-      );
+  // Data for appointments by month
+  const appointmentsByMonthData = useMemo(() => {
+    const months = {};
+    const today = new Date();
+    
+    // Initialize months (current month and next 5 months)
+    for (let i = 0; i < 6; i++) {
+      const date = new Date(today);
+      date.setMonth(today.getMonth() + i);
+      const monthKey = format(date, 'MM-yyyy');
+      const monthName = format(date, 'MMM', { locale: ptBR });
+      months[monthKey] = { name: monthName, value: 0 };
     }
-    return null;
-  };
+    
+    appointments.forEach(appointment => {
+      try {
+        const appointmentDate = parseISO(appointment.date);
+        const monthKey = format(appointmentDate, 'MM-yyyy');
+        
+        // Only count future appointments in the next 6 months
+        if (monthKey in months) {
+          months[monthKey].value++;
+        }
+      } catch (error) {
+        console.error('Error parsing appointment date:', error);
+      }
+    });
+    
+    return Object.values(months);
+  }, [appointments]);
+  
+  // Distribution of appointments throughout the week
+  const appointmentsWeekdayData = useMemo(() => {
+    const weekdays = {
+      'Dom': 0,
+      'Seg': 0,
+      'Ter': 0,
+      'Qua': 0,
+      'Qui': 0,
+      'Sex': 0,
+      'Sáb': 0,
+    };
+    
+    appointments.forEach(appointment => {
+      try {
+        const appointmentDate = parseISO(appointment.date);
+        const weekday = format(appointmentDate, 'EEE', { locale: ptBR });
+        weekdays[weekday]++;
+      } catch (error) {
+        console.error('Error parsing appointment date:', error);
+      }
+    });
+    
+    return Object.keys(weekdays).map(day => ({
+      name: day,
+      value: weekdays[day]
+    }));
+  }, [appointments]);
   
   return (
     <div className="space-y-6">
-      <div className="bg-blue-500 dark:bg-blue-700 py-4 px-6 rounded-lg">
-        <h2 className="text-xl font-bold text-center text-white">ANÁLISE DE COMPROMISSOS</h2>
+      <div className="bg-lime-300 dark:bg-lime-700 py-4 px-6 rounded-lg">
+        <h2 className="text-xl font-bold text-center text-black dark:text-white">ANÁLISE DE COMPROMISSOS</h2>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>COMPROMISSOS POR MÊS</CardTitle>
+            <CardTitle>COMPROMISSOS POR CATEGORIA</CardTitle>
             <CardDescription>
-              Quantidade de compromissos nos últimos 6 meses
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={appointmentsByMonth}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => Math.round(value)} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#cfff00" 
-                  strokeWidth={2}
-                  activeDot={{ r: 8 }} 
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>DISTRIBUIÇÃO DE COMPROMISSOS</CardTitle>
-            <CardDescription>
-              Compromissos passados vs. futuros
+              Distribuição dos compromissos por categoria
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={appointmentsDistribution}
+                  data={appointmentsByCategoryData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
+                  outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
-                  label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
+                  label={({ name, value, percent }) => 
+                    `${name}: ${Math.round(value)} (${Math.round(percent * 100)}%)`
+                  }
                 >
-                  {appointmentsDistribution.map((entry, index) => (
+                  {appointmentsByCategoryData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
-                <Legend />
+                <Tooltip formatter={(value) => [`${Math.round(Number(value))}`, 'Compromissos']} />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -174,7 +139,30 @@ export const AppointmentsCharts = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>DIAS DA SEMANA</CardTitle>
+            <CardTitle>COMPROMISSOS FUTUROS</CardTitle>
+            <CardDescription>
+              Distribuição de compromissos nos próximos meses
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={appointmentsByMonthData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value) => `${Math.round(value)}`} />
+                <Tooltip formatter={(value) => [`${Math.round(Number(value))}`, 'Compromissos']} />
+                <Bar dataKey="value" fill="#cfff00" barSize={35} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        
+        <Card className="md:col-span-2 lg:col-span-1">
+          <CardHeader>
+            <CardTitle>DISTRIBUIÇÃO NA SEMANA</CardTitle>
             <CardDescription>
               Frequência de compromissos por dia da semana
             </CardDescription>
@@ -182,14 +170,14 @@ export const AppointmentsCharts = () => {
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={appointmentsByDayOfWeek}
+                data={appointmentsWeekdayData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => Math.round(value)} />
-                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
-                <Bar dataKey="value" fill="#22c55e" barSize={35} radius={[4, 4, 0, 0]} />
+                <YAxis tickFormatter={(value) => `${Math.round(value)}`} />
+                <Tooltip formatter={(value) => [`${Math.round(Number(value))}`, 'Compromissos']} />
+                <Bar dataKey="value" fill="#60a5fa" barSize={35} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
