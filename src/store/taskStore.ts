@@ -11,12 +11,13 @@ export interface Task {
   id: string;
   user_id: string;
   title: string;
-  description?: string; // Campo adicionado para descrição
+  description?: string;
   category: TaskCategory;
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string;
   created_at: string;
+  updated_at: string; // Added updated_at property
 }
 
 interface TaskState {
@@ -24,7 +25,7 @@ interface TaskState {
   loading: boolean;
   error: string | null;
   
-  addTask: (task: Omit<Task, 'id' | 'created_at'>) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateTask: (id: string, updatedTask: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   fetchTasks: () => Promise<void>;
@@ -43,16 +44,23 @@ export const useTaskStore = create<TaskState>()(
       addTask: async (taskData) => {
         set({ loading: true, error: null });
         try {
+          const now = new Date().toISOString();
           const { data, error } = await supabase
             .from('tasks')
-            .insert([taskData])
+            .insert([{
+              ...taskData,
+              updated_at: now // Set initial updated_at to now
+            }])
             .select()
             .single();
           
           if (error) throw error;
           
-          // Cast the data to the correct type
-          const typedTask = data as unknown as Task;
+          // Cast the data to the correct type and ensure updated_at is set
+          const typedTask = {
+            ...data,
+            updated_at: data.updated_at || data.created_at // Fallback to created_at if needed
+          } as unknown as Task;
           
           set((state) => ({
             tasks: [...state.tasks, typedTask],
@@ -67,17 +75,26 @@ export const useTaskStore = create<TaskState>()(
       updateTask: async (id, updatedTask) => {
         set({ loading: true, error: null });
         try {
+          // Add updated_at timestamp
+          const updates = {
+            ...updatedTask,
+            updated_at: new Date().toISOString()
+          };
+          
           const { data, error } = await supabase
             .from('tasks')
-            .update(updatedTask)
+            .update(updates)
             .eq('id', id)
             .select()
             .single();
           
           if (error) throw error;
           
-          // Cast the data to the correct type
-          const typedTask = data as unknown as Task;
+          // Cast the data to the correct type and ensure updated_at is set
+          const typedTask = {
+            ...data,
+            updated_at: data.updated_at || data.created_at // Fallback to created_at if needed
+          } as unknown as Task;
           
           set((state) => ({
             tasks: state.tasks.map((task) =>
@@ -121,8 +138,11 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Cast the data to the correct type
-          const typedTasks = (data || []) as unknown as Task[];
+          // Cast the data to the correct type and ensure all tasks have updated_at
+          const typedTasks = (data || []).map(task => ({
+            ...task,
+            updated_at: task.updated_at || task.created_at // Fallback to created_at if needed
+          })) as unknown as Task[];
           
           set({ tasks: typedTasks, loading: false });
         } catch (error) {
