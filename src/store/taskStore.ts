@@ -11,13 +11,12 @@ export interface Task {
   id: string;
   user_id: string;
   title: string;
-  description?: string;
+  description?: string; // Campo adicionado para descrição
   category: TaskCategory;
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string;
   created_at: string;
-  updated_at?: string;
 }
 
 interface TaskState {
@@ -52,11 +51,8 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Cast the data to the correct type and set updated_at if not present
-          const typedTask: Task = {
-            ...data as Task,
-            updated_at: data.updated_at || data.created_at
-          };
+          // Cast the data to the correct type
+          const typedTask = data as unknown as Task;
           
           set((state) => ({
             tasks: [...state.tasks, typedTask],
@@ -80,11 +76,8 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Cast the data to the correct type and ensure updated_at is present
-          const typedTask: Task = {
-            ...data as Task,
-            updated_at: new Date().toISOString()
-          };
+          // Cast the data to the correct type
+          const typedTask = data as unknown as Task;
           
           set((state) => ({
             tasks: state.tasks.map((task) =>
@@ -128,11 +121,8 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Cast the data to the correct type and add updated_at if not present
-          const typedTasks = (data || []).map(task => ({
-            ...task,
-            updated_at: task.updated_at || task.created_at
-          })) as Task[];
+          // Cast the data to the correct type
+          const typedTasks = (data || []) as unknown as Task[];
           
           set({ tasks: typedTasks, loading: false });
         } catch (error) {

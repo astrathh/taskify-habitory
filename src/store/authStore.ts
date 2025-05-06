@@ -1,155 +1,155 @@
 
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
-import { toast } from 'sonner';
 
-export interface AuthState {
+type AuthState = {
   user: User | null;
-  isAuthenticated: boolean;
+  session: Session | null;
   loading: boolean;
-  error: string | null; // Add missing error property
-  checkAuth: () => Promise<void>;
+  error: string | null;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => Promise<void>;
   loginWithGoogle: () => Promise<void>;
-  loginWithGithub: () => Promise<void>;
-  clearError: () => void; // Add missing clearError method
-}
+  logout: () => Promise<void>;
+  setUser: (user: User | null) => void;
+  setSession: (session: Session | null) => void;
+  clearError: () => void;
+};
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  loading: true,
-  error: null, // Initialize error state
-
-  checkAuth: async () => {
-    try {
-      set({ loading: true });
-      const { data } = await supabase.auth.getSession();
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      session: null,
+      loading: false,
+      error: null,
+      isAuthenticated: false,
       
-      if (data?.session?.user) {
+      login: async (email, password) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (error) throw error;
+          
+          set({ 
+            user: data.user, 
+            session: data.session,
+            isAuthenticated: true, 
+            loading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Falha ao fazer login', 
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      register: async (email, password, name) => {
+        set({ loading: true, error: null });
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                name
+              }
+            }
+          });
+          
+          if (error) throw error;
+          
+          set({ 
+            user: data.user, 
+            session: data.session,
+            isAuthenticated: !!data.session, 
+            loading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Falha ao criar conta', 
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      loginWithGoogle: async () => {
+        set({ loading: true, error: null });
+        try {
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: `${window.location.origin}/auth/callback`
+            }
+          });
+          
+          if (error) throw error;
+          
+          // O redirecionamento será tratado pelo Supabase
+          // User e session serão atualizados pelo onAuthStateChange
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Falha ao fazer login com Google', 
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      logout: async () => {
+        set({ loading: true });
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) throw error;
+          
+          set({ 
+            user: null, 
+            session: null,
+            isAuthenticated: false, 
+            loading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Falha ao fazer logout', 
+            loading: false 
+          });
+          throw error;
+        }
+      },
+      
+      setUser: (user) => {
         set({ 
-          user: data.session.user, 
-          isAuthenticated: true, 
+          user, 
+          isAuthenticated: !!user,
           loading: false 
         });
-      } else {
-        set({ user: null, isAuthenticated: false, loading: false });
-      }
-    } catch (error) {
-      console.error('Error checking auth:', error);
-      set({ user: null, isAuthenticated: false, loading: false });
+      },
+      
+      setSession: (session) => {
+        set({ 
+          session,
+          user: session?.user || null,
+          isAuthenticated: !!session
+        });
+      },
+      
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({ 
+        isAuthenticated: state.isAuthenticated 
+      }),
     }
-  },
-
-  login: async (email, password) => {
-    try {
-      set({ loading: true, error: null });
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      set({
-        user: data.user,
-        isAuthenticated: true,
-        loading: false,
-      });
-
-      toast.success('Login realizado com sucesso!');
-    } catch (error: any) {
-      console.error('Login error:', error);
-      toast.error(error.message || 'Erro ao realizar login');
-      set({ loading: false, error: error.message });
-      throw error;
-    }
-  },
-
-  register: async (email, password, name) => {
-    try {
-      set({ loading: true, error: null });
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      set({
-        user: data.user,
-        isAuthenticated: true,
-        loading: false,
-      });
-
-      toast.success('Conta criada com sucesso!');
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      toast.error(error.message || 'Erro ao criar conta');
-      set({ loading: false, error: error.message });
-      throw error;
-    }
-  },
-
-  logout: async () => {
-    try {
-      set({ loading: true });
-      await supabase.auth.signOut();
-      set({ user: null, isAuthenticated: false, loading: false });
-      toast.success('Logout realizado com sucesso!');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Erro ao realizar logout');
-      set({ loading: false });
-    }
-  },
-
-  loginWithGoogle: async () => {
-    try {
-      set({ error: null }); // Clear any existing errors
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      console.error('Google login error:', error);
-      toast.error(error.message || 'Erro ao realizar login com Google');
-      set({ error: error.message });
-    }
-  },
-
-  loginWithGithub: async () => {
-    try {
-      set({ error: null }); // Clear any existing errors
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      console.error('Github login error:', error);
-      toast.error(error.message || 'Erro ao realizar login com Github');
-      set({ error: error.message });
-    }
-  },
-
-  // Add clearError method
-  clearError: () => {
-    set({ error: null });
-  },
-}));
+  )
+);

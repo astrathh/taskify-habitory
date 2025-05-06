@@ -1,78 +1,110 @@
 
-import React, { Suspense, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@/components/ui/theme-provider';
-import { Toaster } from '@/components/ui/sonner';
-import { useAuthStore } from '@/store/authStore';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
-import AppLayout from '@/components/layout/AppLayout';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import Dashboard from '@/pages/Dashboard';
-import NotFound from '@/pages/NotFound';
-import AuthCallback from '@/pages/AuthCallback';
-import Index from '@/pages/Index';
-import TaskForm from '@/pages/TaskForm';
-import AppointmentForm from '@/pages/AppointmentForm';
-import AppointmentsPage from '@/pages/AppointmentsPage';
-import HabitForm from '@/pages/HabitForm';
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuthStore } from "@/store/authStore";
+import { useTaskStore } from "@/store/taskStore";
+import { useAppointmentStore } from "@/store/appointmentStore";
+import { useNotificationStore } from "@/store/notificationStore";
+import { useHabitStore } from "@/store/habitStore";
 
-// Unified tracking page that replaces both Tasks and Habits pages
-import TrackablePage from '@/pages/TrackablePage';
+// Layouts
+import AppLayout from "@/components/layout/AppLayout";
 
-// Auth guard for protected routes
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuthStore();
-  
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-cfff00 rounded-full border-t-transparent"></div>
-      </div>
-    );
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
-};
+// Authentication Pages
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import AuthCallback from "./pages/AuthCallback";
 
-function App() {
-  const { checkAuth } = useAuthStore();
-  
+// App Pages
+import Dashboard from "./pages/Dashboard";
+import TasksPage from "./pages/TasksPage";
+import AppointmentsPage from "./pages/AppointmentsPage";
+import HabitsPage from "./pages/HabitsPage";
+import HabitForm from "./pages/HabitForm";
+import TaskForm from "./pages/TaskForm";
+import AppointmentForm from "./pages/AppointmentForm";
+import NotFound from "./pages/NotFound";
+
+const App = () => {
+  const { setSession, isAuthenticated, user } = useAuthStore();
+  const { fetchTasks } = useTaskStore();
+  const { fetchAppointments } = useAppointmentStore();
+  const { fetchNotifications } = useNotificationStore();
+  const { fetchHabits } = useHabitStore();
+
+  // Set up auth state listener
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-  
+    // First get the initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Set up the auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [setSession]);
+
+  // Carregar dados quando o usuário estiver autenticado
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Carregar dados iniciais do usuário
+      fetchTasks();
+      fetchAppointments();
+      fetchNotifications();
+      fetchHabits();
+    }
+  }, [isAuthenticated, user, fetchTasks, fetchAppointments, fetchNotifications, fetchHabits]);
+
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="theme">
-      <Suspense fallback={<div>Carregando...</div>}>
+    <ThemeProvider defaultTheme="light">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
         <Routes>
-          <Route index element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          {/* Auth Routes */}
+          <Route path="/login" element={
+            !isAuthenticated ? <Login /> : <Navigate to="/" replace />
+          } />
+          <Route path="/register" element={
+            !isAuthenticated ? <Register /> : <Navigate to="/" replace />
+          } />
+          
+          {/* Auth callback route for OAuth */}
           <Route path="/auth/callback" element={<AuthCallback />} />
           
-          <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="tasks" element={<TrackablePage />} />
+          {/* App Routes - Protected by AppLayout */}
+          <Route path="/" element={
+            isAuthenticated ? <AppLayout /> : <Navigate to="/login" replace />
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path="tasks" element={<TasksPage />} />
             <Route path="tasks/new" element={<TaskForm />} />
             <Route path="tasks/edit/:id" element={<TaskForm />} />
             <Route path="appointments" element={<AppointmentsPage />} />
             <Route path="appointments/new" element={<AppointmentForm />} />
             <Route path="appointments/edit/:id" element={<AppointmentForm />} />
+            <Route path="habits" element={<HabitsPage />} />
             <Route path="habits/new" element={<HabitForm />} />
-            <Route path="habits/edit/:id" element={<HabitForm />} />
+            <Route path="settings" element={<div>Settings Page</div>} />
           </Route>
           
+          {/* Catch-all redirect to 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Suspense>
-      <Toaster />
+      </TooltipProvider>
     </ThemeProvider>
   );
-}
+};
 
 export default App;

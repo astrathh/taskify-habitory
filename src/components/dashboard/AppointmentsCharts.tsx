@@ -1,155 +1,200 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useAppointmentStore } from '@/store/appointmentStore';
+import { format, subMonths, isThisMonth, isAfter, isBefore, endOfMonth, startOfMonth, differenceInDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
 
-const COLORS = ['#CFff00', '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+const COLORS = ['#cfff00', '#ef4444', '#fbbf24', '#22c55e'];
 
-const AppointmentsCharts = () => {
+export const AppointmentsCharts = () => {
   const { appointments } = useAppointmentStore();
-
-  // Convert date objects to the month name
-  const getMonthName = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('pt-BR', { month: 'short' });
-  };
-
-  // Group appointments by month
+  
+  // Data for appointments by month
   const appointmentsByMonth = useMemo(() => {
-    const groupedByMonth: Record<string, number> = {};
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const date = subMonths(new Date(), i);
+      return {
+        name: format(date, 'MMM', { locale: ptBR }),
+        month: date.getMonth(),
+        year: date.getFullYear(),
+      };
+    }).reverse();
     
-    appointments.forEach((appointment) => {
-      const month = getMonthName(appointment.date);
-      if (!groupedByMonth[month]) {
-        groupedByMonth[month] = 0;
-      }
-      groupedByMonth[month] += 1;
+    const data = months.map(({ name, month, year }) => {
+      const count = appointments.filter(appointment => {
+        const appointmentDate = new Date(appointment.date);
+        return appointmentDate.getMonth() === month && appointmentDate.getFullYear() === year;
+      }).length;
+      
+      return {
+        name,
+        value: count,
+      };
     });
     
-    return Object.entries(groupedByMonth).map(([month, count]) => ({
-      month,
-      count: Math.round(count) // Ensure count is an integer
-    }));
+    return data;
   }, [appointments]);
-
-  // Group appointments by location (or "Não definido" if no location)
-  const appointmentsByLocation = useMemo(() => {
-    const groupedByLocation: Record<string, number> = {};
+  
+  // Data for appointments distribution
+  const appointmentsDistribution = useMemo(() => {
+    const now = new Date();
+    const pastAppointments = appointments.filter(appointment => 
+      isBefore(new Date(appointment.date), now)
+    ).length;
     
-    appointments.forEach((appointment) => {
-      const location = appointment.location || "Não definido";
-      if (!groupedByLocation[location]) {
-        groupedByLocation[location] = 0;
-      }
-      groupedByLocation[location] += 1;
+    const currentMonthAppointments = appointments.filter(appointment => 
+      isThisMonth(new Date(appointment.date))
+    ).length;
+    
+    const futureAppointments = appointments.filter(appointment => 
+      isAfter(new Date(appointment.date), now)
+    ).length;
+    
+    return [
+      { name: 'Passados', value: pastAppointments },
+      { name: 'Este Mês', value: currentMonthAppointments },
+      { name: 'Futuros', value: futureAppointments },
+    ];
+  }, [appointments]);
+  
+  // Data for appointments by day of week
+  const appointmentsByDayOfWeek = useMemo(() => {
+    const daysOfWeek = [
+      'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'
+    ];
+    
+    const counts = Array(7).fill(0);
+    
+    appointments.forEach(appointment => {
+      const date = new Date(appointment.date);
+      const dayOfWeek = date.getDay();
+      counts[dayOfWeek]++;
     });
     
-    return Object.entries(groupedByLocation).map(([name, value]) => ({
+    return daysOfWeek.map((name, index) => ({
       name,
-      value: Math.round(value) // Ensure value is an integer
+      value: counts[index],
     }));
   }, [appointments]);
-
-  // Ensure data exists before rendering
-  const hasPieData = appointmentsByLocation.length > 0;
-  const hasBarData = appointmentsByMonth.length > 0;
-
-  // Calculate future vs past appointments
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   
-  const futureAppointments = appointments.filter(
-    (appointment) => new Date(appointment.date) >= today
-  ).length;
+  // Custom Tooltip
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background shadow-lg p-2 border rounded-md">
+          <p className="font-medium">{`${label}: ${Math.round(payload[0].value)}`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
   
-  const pastAppointments = appointments.filter(
-    (appointment) => new Date(appointment.date) < today
-  ).length;
-  
-  const timelineData = [
-    { name: 'Passados', value: Math.round(pastAppointments) },
-    { name: 'Futuros', value: Math.round(futureAppointments) }
-  ];
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Compromissos por Mês</CardTitle>
-          <CardDescription>Distribuição de compromissos ao longo dos meses</CardDescription>
-        </CardHeader>
-        <CardContent className="h-80">
-          {hasBarData ? (
+    <div className="space-y-6">
+      <div className="bg-blue-500 dark:bg-blue-700 py-4 px-6 rounded-lg">
+        <h2 className="text-xl font-bold text-center text-white">ANÁLISE DE COMPROMISSOS</h2>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>COMPROMISSOS POR MÊS</CardTitle>
+            <CardDescription>
+              Quantidade de compromissos nos últimos 6 meses
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={appointmentsByMonth}>
+              <LineChart
+                data={appointmentsByMonth}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis allowDecimals={false} /> {/* Ensure only integers on Y axis */}
-                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
-                <Bar dataKey="count" fill="#cfff00" name="Compromissos" />
-              </BarChart>
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value) => Math.round(value)} />
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#cfff00" 
+                  strokeWidth={2}
+                  activeDot={{ r: 8 }} 
+                />
+              </LineChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              Nenhum dado disponível
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Compromissos por Local</CardTitle>
-          <CardDescription>Distribuição de compromissos por localização</CardDescription>
-        </CardHeader>
-        <CardContent className="h-80">
-          {hasPieData ? (
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>DISTRIBUIÇÃO DE COMPROMISSOS</CardTitle>
+            <CardDescription>
+              Compromissos passados vs. futuros
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={appointmentsByLocation}
+                  data={appointmentsDistribution}
                   cx="50%"
                   cy="50%"
-                  labelLine={true}
-                  outerRadius={80}
+                  innerRadius={60}
+                  outerRadius={90}
                   fill="#8884d8"
                   dataKey="value"
-                  nameKey="name"
-                  label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
                 >
-                  {appointmentsByLocation.map((entry, index) => (
+                  {appointmentsDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex items-center justify-center text-muted-foreground">
-              Nenhum dado disponível
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="md:col-span-2">
-        <CardHeader>
-          <CardTitle>Linha do Tempo de Compromissos</CardTitle>
-          <CardDescription>Compromissos passados vs. futuros</CardDescription>
-        </CardHeader>
-        <CardContent className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={timelineData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" allowDecimals={false} /> {/* Ensure only integers on X axis */}
-              <YAxis type="category" dataKey="name" />
-              <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
-              <Bar dataKey="value" fill="#cfff00" name="Compromissos" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>DIAS DA SEMANA</CardTitle>
+            <CardDescription>
+              Frequência de compromissos por dia da semana
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={appointmentsByDayOfWeek}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value) => Math.round(value)} />
+                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
+                <Bar dataKey="value" fill="#22c55e" barSize={35} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
