@@ -17,8 +17,21 @@ export interface Task {
   priority: TaskPriority;
   due_date: string;
   created_at: string;
-  updated_at?: string; // Add updated_at as optional
+  updated_at?: string;
 }
+
+// Define a type for the database response that doesn't include updated_at
+type TaskDatabaseResponse = {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  category: string;
+  status: string;
+  priority: string;
+  due_date: string;
+  created_at: string;
+};
 
 interface TaskState {
   tasks: Task[];
@@ -53,10 +66,10 @@ export const useTaskStore = create<TaskState>()(
           if (error) throw error;
           
           // Create a properly typed Task object with updated_at
-          const typedTask = {
-            ...data,
-            updated_at: data.updated_at || data.created_at,
-          } as Task;
+          const typedTask: Task = {
+            ...data as TaskDatabaseResponse,
+            updated_at: data.created_at, // If updated_at doesn't exist, use created_at
+          };
           
           set((state) => ({
             tasks: [...state.tasks, typedTask],
@@ -81,10 +94,10 @@ export const useTaskStore = create<TaskState>()(
           if (error) throw error;
           
           // Create a properly typed Task object with updated_at
-          const typedTask = {
-            ...data,
-            updated_at: data.updated_at || data.created_at,
-          } as Task;
+          const typedTask: Task = {
+            ...data as TaskDatabaseResponse,
+            updated_at: new Date().toISOString(), // Set updated_at to current time
+          };
           
           set((state) => ({
             tasks: state.tasks.map((task) =>
@@ -129,10 +142,10 @@ export const useTaskStore = create<TaskState>()(
           if (error) throw error;
           
           // Make sure we handle updated_at in a safe way
-          const typedTasks = (data || []).map(task => ({
-            ...task,
-            updated_at: task.updated_at || task.created_at,
-          })) as Task[];
+          const typedTasks: Task[] = (data || []).map(task => ({
+            ...task as TaskDatabaseResponse,
+            updated_at: task.created_at, // If updated_at doesn't exist, use created_at
+          }));
           
           set({ tasks: typedTasks, loading: false });
         } catch (error) {
