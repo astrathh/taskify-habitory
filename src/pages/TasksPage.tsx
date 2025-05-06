@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTaskStore, Task, TaskPriority, TaskStatus } from '@/store/taskStore';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Componentes refatorados
 import TaskHeader from '@/components/tasks/TaskHeader';
@@ -11,6 +12,7 @@ import TaskFilters from '@/components/tasks/TaskFilters';
 import TaskList from '@/components/tasks/TaskList';
 import EmptyTaskState from '@/components/tasks/EmptyTaskState';
 import TaskDetailModal from '@/components/tasks/TaskDetailModal';
+import WeeklyProgressChart from '@/components/tasks/WeeklyProgressChart';
 import { 
   getPriorityBadge, 
   getStatusBadge,
@@ -27,6 +29,7 @@ const TasksPage = () => {
   const [filterPriority, setFilterPriority] = useState<TaskPriority | 'todas'>('todas');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("list");
 
   useEffect(() => {
     if (user) {
@@ -86,40 +89,71 @@ const TasksPage = () => {
   return (
     <div className="space-y-6">
       <TaskHeader />
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-2 w-full max-w-xs mb-4">
+          <TabsTrigger value="list">Lista de tarefas</TabsTrigger>
+          <TabsTrigger value="progress">Progresso semanal</TabsTrigger>
+        </TabsList>
 
-      <TaskFilters 
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        filterPriority={filterPriority}
-        setFilterPriority={setFilterPriority}
-      />
+        <TabsContent value="list" className="space-y-4">
+          <TaskFilters 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            filterPriority={filterPriority}
+            setFilterPriority={setFilterPriority}
+          />
 
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
-        </div>
-      ) : (
-        <>
-          {filteredTasks.length > 0 ? (
-            <TaskList 
-              tasks={filteredTasks}
-              isOverdue={isOverdue}
-              getPriorityBadge={getPriorityBadge}
-              getStatusBadge={getStatusBadge}
-              getStatusClasses={getStatusClasses}
-              handleStatusChange={handleStatusChange}
-              handleMarkComplete={handleMarkComplete}
-              handleDelete={handleDelete}
-              openTaskModal={openTaskModal}
-              navigate={navigate}
-            />
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
+            </div>
           ) : (
-            <EmptyTaskState searchActive={isSearchActive} />
+            <>
+              {filteredTasks.length > 0 ? (
+                <TaskList 
+                  tasks={filteredTasks}
+                  isOverdue={isOverdue}
+                  getPriorityBadge={getPriorityBadge}
+                  getStatusBadge={getStatusBadge}
+                  getStatusClasses={getStatusClasses}
+                  handleStatusChange={handleStatusChange}
+                  handleMarkComplete={handleMarkComplete}
+                  handleDelete={handleDelete}
+                  openTaskModal={openTaskModal}
+                  navigate={navigate}
+                />
+              ) : (
+                <EmptyTaskState searchActive={isSearchActive} />
+              )}
+            </>
           )}
-        </>
-      )}
+        </TabsContent>
+        
+        <TabsContent value="progress">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
+            </div>
+          ) : (
+            tasks.length > 0 ? (
+              <WeeklyProgressChart tasks={tasks} />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-8 text-center border rounded-lg bg-card">
+                <p className="mb-4 text-lg">Adicione tarefas para visualizar o progresso semanal</p>
+                <button 
+                  className="px-4 py-2 text-white bg-primary rounded-md hover:bg-primary/90"
+                  onClick={() => navigate('/tasks/new')}
+                >
+                  Adicionar tarefa
+                </button>
+              </div>
+            )
+          )}
+        </TabsContent>
+      </Tabs>
 
       <TaskDetailModal 
         task={selectedTask}
