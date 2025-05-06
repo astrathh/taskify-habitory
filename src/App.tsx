@@ -30,7 +30,6 @@ import HabitForm from "./pages/HabitForm";
 import TaskForm from "./pages/TaskForm";
 import AppointmentForm from "./pages/AppointmentForm";
 import NotFound from "./pages/NotFound";
-import TrackablePage from "./pages/TrackablePage"; // Import the new unified page
 
 const App = () => {
   const { setSession, isAuthenticated, user } = useAuthStore();
@@ -97,10 +96,6 @@ const App = () => {
             <Route path="appointments/edit/:id" element={<AppointmentForm />} />
             <Route path="habits" element={<HabitsPage />} />
             <Route path="habits/new" element={<HabitForm />} />
-            
-            {/* New unified trackable items page */}
-            <Route path="trackable" element={<TrackablePage />} />
-            
             <Route path="settings" element={<div>Settings Page</div>} />
           </Route>
           

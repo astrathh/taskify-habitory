@@ -127,7 +127,7 @@ export const AppointmentsCharts = () => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => Math.round(value).toString()} />
+                <YAxis tickFormatter={(value) => Math.round(value)} />
                 <Tooltip content={<CustomTooltip />} />
                 <Line 
                   type="monotone" 
@@ -165,7 +165,7 @@ export const AppointmentsCharts = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [Math.round(Number(value)).toString(), 'Compromissos']} />
+                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
@@ -187,8 +187,8 @@ export const AppointmentsCharts = () => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => Math.round(value).toString()} />
-                <Tooltip formatter={(value) => [Math.round(Number(value)).toString(), 'Compromissos']} />
+                <YAxis tickFormatter={(value) => Math.round(value)} />
+                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Compromissos']} />
                 <Bar dataKey="value" fill="#22c55e" barSize={35} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
