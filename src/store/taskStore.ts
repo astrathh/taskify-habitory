@@ -68,6 +68,9 @@ export const useTaskStore = create<TaskState>()(
           // Create a properly typed Task object with updated_at
           const typedTask: Task = {
             ...data as TaskDatabaseResponse,
+            category: data.category as TaskCategory, 
+            status: data.status as TaskStatus,
+            priority: data.priority as TaskPriority,
             updated_at: data.created_at, // If updated_at doesn't exist, use created_at
           };
           
@@ -96,6 +99,9 @@ export const useTaskStore = create<TaskState>()(
           // Create a properly typed Task object with updated_at
           const typedTask: Task = {
             ...data as TaskDatabaseResponse,
+            category: data.category as TaskCategory,
+            status: data.status as TaskStatus,
+            priority: data.priority as TaskPriority,
             updated_at: new Date().toISOString(), // Set updated_at to current time
           };
           
@@ -144,6 +150,9 @@ export const useTaskStore = create<TaskState>()(
           // Make sure we handle updated_at in a safe way
           const typedTasks: Task[] = (data || []).map(task => ({
             ...task as TaskDatabaseResponse,
+            category: task.category as TaskCategory,
+            status: task.status as TaskStatus,
+            priority: task.priority as TaskPriority,
             updated_at: task.created_at, // If updated_at doesn't exist, use created_at
           }));
           
