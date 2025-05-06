@@ -51,6 +51,8 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({
           item.type === 'task' && 
           item.status === 'concluída' && 
           item.original.updated_at &&
+          // Only access updated_at if it's a Task type since Habit doesn't have it
+          item.type === 'task' && 
           format(new Date(item.original.updated_at), 'yyyy-MM-dd') === dayStr
         ).length;
         

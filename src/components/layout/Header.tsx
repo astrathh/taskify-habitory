@@ -20,13 +20,13 @@ import { useTheme } from '@/components/ui/theme-provider';
 import { Moon, Sun } from 'lucide-react';
 
 const Header = () => {
-  const { logout, user } = useAuthStore();
+  const { signOut, user } = useAuthStore();
   const { unreadCount } = useNotificationStore();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
     navigate('/login');
   };
 

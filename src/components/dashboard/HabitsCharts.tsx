@@ -122,14 +122,14 @@ export const HabitsCharts = () => {
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
               >
-                <XAxis type="number" tickFormatter={(value) => Math.round(value)} />
+                <XAxis type="number" tickFormatter={(value) => Math.round(value).toString()} />
                 <YAxis 
                   dataKey="name" 
                   type="category"
                   tick={{ fontSize: 12 }}
                   width={70}
                 />
-                <Tooltip formatter={(value) => [Math.round(Number(value)), 'Hábitos']} />
+                <Tooltip formatter={(value) => [Math.round(Number(value)).toString(), 'Hábitos']} />
                 <Bar dataKey="value" fill="#cfff00" barSize={20} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -151,7 +151,7 @@ export const HabitsCharts = () => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis unit="%" domain={[0, 125]} tickFormatter={(value) => Math.round(value)} />
+                <YAxis unit="%" domain={[0, 125]} tickFormatter={(value) => Math.round(value).toString()} />
                 <Tooltip formatter={(value) => [`${Math.round(Number(value))}%`, 'Progresso']} />
                 <Bar dataKey="value" fill="#a7f3d0" barSize={35} radius={[4, 4, 0, 0]} />
               </BarChart>

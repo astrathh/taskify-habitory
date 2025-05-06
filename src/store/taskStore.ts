@@ -17,7 +17,7 @@ export interface Task {
   priority: TaskPriority;
   due_date: string;
   created_at: string;
-  updated_at: string; // Added updated_at property
+  updated_at: string;
 }
 
 interface TaskState {
@@ -49,18 +49,18 @@ export const useTaskStore = create<TaskState>()(
             .from('tasks')
             .insert([{
               ...taskData,
-              updated_at: now // Set initial updated_at to now
+              updated_at: now
             }])
             .select()
             .single();
           
           if (error) throw error;
           
-          // Cast the data to the correct type and ensure updated_at is set
+          // Ensure task has updated_at property
           const typedTask = {
             ...data,
             updated_at: data.updated_at || data.created_at // Fallback to created_at if needed
-          } as unknown as Task;
+          } as Task;
           
           set((state) => ({
             tasks: [...state.tasks, typedTask],
@@ -90,11 +90,11 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Cast the data to the correct type and ensure updated_at is set
+          // Ensure task has updated_at property
           const typedTask = {
             ...data,
             updated_at: data.updated_at || data.created_at // Fallback to created_at if needed
-          } as unknown as Task;
+          } as Task;
           
           set((state) => ({
             tasks: state.tasks.map((task) =>
@@ -138,11 +138,11 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Cast the data to the correct type and ensure all tasks have updated_at
+          // Ensure all tasks have updated_at property
           const typedTasks = (data || []).map(task => ({
             ...task,
             updated_at: task.updated_at || task.created_at // Fallback to created_at if needed
-          })) as unknown as Task[];
+          })) as Task[];
           
           set({ tasks: typedTasks, loading: false });
         } catch (error) {
