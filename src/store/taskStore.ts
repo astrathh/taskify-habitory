@@ -52,7 +52,7 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Handle the data without relying on updated_at
+          // Create a properly typed Task object with updated_at
           const typedTask = {
             ...data,
             updated_at: data.updated_at || data.created_at,
@@ -80,7 +80,7 @@ export const useTaskStore = create<TaskState>()(
           
           if (error) throw error;
           
-          // Handle the data without relying on updated_at
+          // Create a properly typed Task object with updated_at
           const typedTask = {
             ...data,
             updated_at: data.updated_at || data.created_at,

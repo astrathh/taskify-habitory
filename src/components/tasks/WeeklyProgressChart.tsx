@@ -12,7 +12,6 @@ import {
   BarChart,
   Bar,
   Cell,
-  TooltipProps
 } from 'recharts';
 import { 
   ChartContainer, 
@@ -100,6 +99,24 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({ tasks }) => {
   const totalCompleted = weeklyData.reduce((acc, day) => acc + day.completed, 0);
   const totalTasks = weeklyData.reduce((acc, day) => acc + day.total, 0);
 
+  // Custom tooltip component for the chart
+  const CustomTooltipContent = (props: any) => {
+    const { active, payload } = props;
+    
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-popover p-2 border border-border rounded-md shadow-md">
+          <p className="font-medium">{`Dia: ${payload[0].payload.day}`}</p>
+          <p className="text-sm">{`Total: ${payload[0].payload.total}`}</p>
+          <p className="text-sm">{`Concluídas: ${payload[0].payload.completed}`}</p>
+          <p className="text-sm">{`Taxa: ${payload[0].payload.completionRate}%`}</p>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -137,19 +154,7 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({ tasks }) => {
                 axisLine={{ stroke: 'var(--border)' }}
                 tickFormatter={(value: number) => `${value}`}
               />
-              <ChartTooltip 
-                content={(props) => (
-                  <ChartTooltipContent 
-                    {...props}
-                    formatter={(value, name) => {
-                      if (name === 'completionRate') {
-                        return [`${value}%`, 'Taxa de conclusão'];
-                      }
-                      return [value, name === 'completed' ? 'Concluídas' : 'Total'];
-                    }}
-                  />
-                )}
-              />
+              <Tooltip content={<CustomTooltipContent />} />
               <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]}>
                 {weeklyData.map((entry, index) => (
                   <Cell key={`total-cell-${index}`} />

@@ -183,7 +183,7 @@ export const TasksCharts = () => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => Math.round(value)} />
+                <YAxis tickFormatter={(value) => `${Math.round(value)}`} />
                 <Tooltip formatter={(value, name, props) => {
                   return [`${Math.round(Number(value))} tarefa(s)`, `${props.payload.name}`];
                 }} />
@@ -212,7 +212,7 @@ export const TasksCharts = () => {
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
               >
-                <XAxis type="number" tickFormatter={(value) => Math.round(value)} />
+                <XAxis type="number" tickFormatter={(value) => `${Math.round(value)}`} />
                 <YAxis 
                   dataKey="name" 
                   type="category"
