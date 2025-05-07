@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTaskStore } from '@/store/taskStore';
@@ -360,8 +359,8 @@ export const TasksCharts = () => {
               </p>
               {efficiencyMetrics.avgCompletionTime > 0 && (
                 <div className="mt-4">
-                  <Badge variant={efficiencyMetrics.avgCompletionTime <= 2 ? 'success' : 
-                        efficiencyMetrics.avgCompletionTime <= 5 ? 'default' : 'destructive'}>
+                  <Badge variant={efficiencyMetrics.avgCompletionTime <= 2 ? 'default' : 
+                        efficiencyMetrics.avgCompletionTime <= 5 ? 'secondary' : 'destructive'}>
                     {efficiencyMetrics.avgCompletionTime <= 2 ? 'Excelente' : 
                      efficiencyMetrics.avgCompletionTime <= 5 ? 'Normal' : 'Precisa melhorar'}
                   </Badge>
