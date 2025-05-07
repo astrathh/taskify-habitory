@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +31,7 @@ const Dashboard = () => {
     setInitialNotificationSent 
   } = useNotificationStore();
   
-  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [activeTab, setActiveTab] = useState<string>("tasks");
 
   // Carregar dados ao montar o componente
   useEffect(() => {
@@ -145,7 +144,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="hover:shadow-md transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tarefas Pendentes</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
@@ -155,10 +154,16 @@ const Dashboard = () => {
             <p className="text-xs text-muted-foreground mt-1">
               {completedTasks} tarefas concluídas
             </p>
+            <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-primary h-2 rounded-full" 
+                style={{ width: tasks.length > 0 ? `${Math.round((completedTasks / tasks.length) * 100)}%` : '0%' }}
+              ></div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover:shadow-md transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Compromissos</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -171,7 +176,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover:shadow-md transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Progresso de Hábitos</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -183,10 +188,16 @@ const Dashboard = () => {
             <p className="text-xs text-muted-foreground mt-1">
               {currentMonthProgress?.habits.length || 0} hábitos em {currentMonth}
             </p>
+            <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div 
+                className="bg-primary h-2 rounded-full" 
+                style={{ width: `${currentMonthProgress?.overall || 0}%` }}
+              ></div>
+            </div>
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="hover:shadow-md transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Prioridade Alta</CardTitle>
             <AlertCircle className="h-4 w-4 text-destructive" />
@@ -201,138 +212,88 @@ const Dashboard = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full sm:w-auto">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+        <TabsList className="grid grid-cols-3 w-full sm:w-auto">
           <TabsTrigger value="tasks">Tarefas</TabsTrigger>
           <TabsTrigger value="appointments">Compromissos</TabsTrigger>
           <TabsTrigger value="habits">Hábitos</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tarefas Recentes</CardTitle>
-                <CardDescription>
-                  As últimas tarefas que você adicionou
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tasks.length > 0 ? (
-                  <div className="space-y-4">
-                    {tasks.slice(0, 5).map((task) => (
-                      <div
-                        key={task.id}
-                        className="flex items-center justify-between p-3 border rounded-md"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-2 h-2 rounded-full ${
-                              task.priority === 'alta'
-                                ? 'bg-destructive'
-                                : task.priority === 'média'
-                                ? 'bg-yellow-500'
-                                : 'bg-green-500'
-                            }`}
-                          />
-                          <div>
-                            <p className={`text-sm ${task.status === 'concluída' ? 'line-through text-muted-foreground' : ''}`}>
-                              {task.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {task.category} • Vence em{' '}
-                              {new Date(task.due_date).toLocaleDateString('pt-BR')}
-                            </p>
-                          </div>
-                        </div>
-                        <span
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            task.status === 'concluída'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : task.status === 'em progresso'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                          }`}
-                        >
-                          {task.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <CheckCircle className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                    <h3 className="text-lg font-medium">Nenhuma tarefa ainda</h3>
-                    <p className="text-sm text-muted-foreground mt-1 mb-4">
-                      Adicione suas primeiras tarefas para começar
-                    </p>
-                    <Button onClick={() => navigate('/tasks/new')}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar Tarefa
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Próximos Compromissos</CardTitle>
-                <CardDescription>
-                  Compromissos agendados para os próximos dias
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {upcomingAppointments.length > 0 ? (
-                  <div className="space-y-4">
-                    {upcomingAppointments.slice(0, 5).map((appointment) => (
-                      <div
-                        key={appointment.id}
-                        className="flex items-start gap-3 p-3 border rounded-md"
-                      >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <Clock className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{appointment.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(appointment.date).toLocaleDateString('pt-BR', {
-                              weekday: 'long',
-                              day: '2-digit',
-                              month: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </p>
-                          {appointment.location && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Local: {appointment.location}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <Calendar className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                    <h3 className="text-lg font-medium">Nenhum compromisso</h3>
-                    <p className="text-sm text-muted-foreground mt-1 mb-4">
-                      Adicione seus próximos compromissos
-                    </p>
-                    <Button onClick={() => navigate('/appointments/new')}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar Compromisso
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="tasks">
+        <TabsContent value="tasks" className="space-y-4">
           <TasksCharts />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Tarefas Recentes</CardTitle>
+              <CardDescription>
+                As últimas tarefas que você adicionou
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {tasks.length > 0 ? (
+                <div className="space-y-4">
+                  {tasks.slice(0, 5).map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between p-3 border rounded-md hover:shadow-sm transition-all cursor-pointer"
+                      onClick={() => navigate(`/tasks`)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            task.priority === 'alta'
+                              ? 'bg-destructive'
+                              : task.priority === 'média'
+                              ? 'bg-yellow-500'
+                              : 'bg-green-500'
+                          }`}
+                        />
+                        <div>
+                          <p className={`text-sm ${task.status === 'concluída' ? 'line-through text-muted-foreground' : ''}`}>
+                            {task.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {task.category} • Vence em{' '}
+                            {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${
+                          task.status === 'concluída'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : task.status === 'em progresso'
+                            ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                            : task.status === 'cancelada'
+                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                        }`}
+                      >
+                        {task.status}
+                      </span>
+                    </div>
+                  ))}
+                  
+                  <div className="flex justify-center mt-4">
+                    <Button variant="outline" onClick={() => navigate('/tasks')}>
+                      Ver todas as tarefas
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <CheckCircle className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                  <h3 className="text-lg font-medium">Nenhuma tarefa ainda</h3>
+                  <p className="text-sm text-muted-foreground mt-1 mb-4">
+                    Adicione suas primeiras tarefas para começar
+                  </p>
+                  <Button onClick={() => navigate('/tasks/new')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Tarefa
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="appointments">

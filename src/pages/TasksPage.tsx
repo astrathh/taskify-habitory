@@ -93,7 +93,7 @@ const TasksPage = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-2 w-full max-w-xs mb-4">
           <TabsTrigger value="list">Lista de tarefas</TabsTrigger>
-          <TabsTrigger value="progress">Progresso semanal</TabsTrigger>
+          <TabsTrigger value="progress">Análise Semanal</TabsTrigger>
         </TabsList>
 
         <TabsContent value="list" className="space-y-4">
