@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,63 +8,115 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { supabase } from '@/integrations/supabase/client';
+
+// Validação de formulário usando Zod
+const registerSchema = z.object({
+  name: z.string().min(2, { message: 'Nome deve ter pelo menos 2 caracteres' }),
+  email: z.string().email({ message: 'Email inválido' }),
+  password: z.string().min(6, { message: 'Senha deve ter pelo menos 6 caracteres' }),
+  confirmPassword: z.string()
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
+
 const Register = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const {
-    register,
-    loginWithGoogle,
-    loading,
-    error,
-    clearError
-  } = useAuthStore();
+  const { loading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
-  const validatePasswords = () => {
-    if (password !== confirmPassword) {
-      setPasswordError('As senhas não coincidem');
-      return false;
-    }
-    if (password.length < 6) {
-      setPasswordError('A senha deve ter pelo menos 6 caracteres');
-      return false;
-    }
-    setPasswordError('');
-    return true;
-  };
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validatePasswords()) {
-      return;
-    }
+  const { toast } = useToast();
+
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
+
+  const handleSubmit = async (values: RegisterFormValues) => {
+    clearError();
+    
     try {
-      await register(email, password, name);
-      navigate('/');
-      toast({
-        title: 'Conta criada com sucesso',
-        description: 'Bem-vindo ao Taskify'
+      // Registrando o usuário diretamente pelo supabase para maior controle
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            name: values.name,
+          }
+        }
       });
-    } catch (error) {
-      // Error is handled by the store
+      
+      if (signUpError) throw signUpError;
+      
+      // Verifique se o usuário foi criado corretamente
+      if (data.user) {
+        toast({
+          title: 'Conta criada com sucesso',
+          description: 'Bem-vindo ao Taskify!',
+        });
+        
+        // Verificando se é necessário confirmar o email
+        if (data.session) {
+          navigate('/');
+        } else {
+          toast({
+            title: 'Verifique seu email',
+            description: 'Enviamos um link de confirmação para seu email',
+          });
+          navigate('/login');
+        }
+      }
+    } catch (err: any) {
+      console.error('Erro no registro:', err);
+      toast({
+        title: 'Erro ao criar conta',
+        description: err.message || 'Ocorreu um erro ao tentar criar sua conta',
+        variant: 'destructive'
+      });
     }
   };
+
   const handleGoogleLogin = async () => {
+    clearError();
     try {
-      await loginWithGoogle();
-      // O redirecionamento será tratado pelo Supabase OAuth
-    } catch (error) {
-      // Error is handled by the store
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Erro no login com Google:', error);
+      toast({
+        title: 'Erro no login com Google',
+        description: error.message || 'Ocorreu um erro ao tentar fazer login com Google',
+        variant: 'destructive'
+      });
     }
   };
-  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-50 to-blue-50 p-4">
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-purple-50 to-blue-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img alt="Logo RevTasks" className="mx-auto h-12" src="https://storage.googleapis.com/msgsndr/S7HEFAz97UKuC8NLHMmI/media/680ff8d2fe2cb4326f64cca3.png" />
+          <img 
+            alt="Logo RevTasks" 
+            className="mx-auto h-12" 
+            src="https://storage.googleapis.com/msgsndr/S7HEFAz97UKuC8NLHMmI/media/680ff8d2fe2cb4326f64cca3.png" 
+          />
           <p className="text-muted-foreground">
             A plataforma completa para gerenciar suas tarefas
           </p>
@@ -77,51 +130,116 @@ const Register = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {error && <Alert variant="destructive" className="mb-4">
+            {error && (
+              <Alert variant="destructive" className="mb-4">
                 <AlertDescription>{error}</AlertDescription>
-              </Alert>}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input id="name" type="text" placeholder="Seu nome completo" value={name} onChange={e => {
-                setName(e.target.value);
-                clearError();
-              }} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="seu@email.com" value={email} onChange={e => {
-                setEmail(e.target.value);
-                clearError();
-              }} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input id="password" type="password" placeholder="********" value={password} onChange={e => {
-                setPassword(e.target.value);
-                setPasswordError('');
-                clearError();
-              }} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-                <Input id="confirmPassword" type="password" placeholder="********" value={confirmPassword} onChange={e => {
-                setConfirmPassword(e.target.value);
-                setPasswordError('');
-                clearError();
-              }} required />
-                {passwordError && <p className="text-sm text-destructive mt-1">{passwordError}</p>}
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Criando conta...
-                  </span> : 'Criar Conta'}
-              </Button>
-            </form>
+              </Alert>
+            )}
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Seu nome completo" 
+                          {...field} 
+                          onChange={(e) => {
+                            field.onChange(e);
+                            clearError();
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email" 
+                          placeholder="seu@email.com" 
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            clearError();
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="********" 
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            clearError();
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmar Senha</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="********" 
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            clearError();
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Criando conta...
+                    </span>
+                  ) : (
+                    'Criar Conta'
+                  )}
+                </Button>
+              </form>
+            </Form>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
@@ -154,6 +272,7 @@ const Register = () => {
           </CardFooter>
         </Card>
       </div>
-    </div>;
+    </div>
+  );
 };
 export default Register;
