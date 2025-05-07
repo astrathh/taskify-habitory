@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
   Plus, Calendar, BarChart3, CheckCircle2, XCircle,
-  ArrowUp, ArrowDown, CalendarRange 
+  Check, X, CalendarRange 
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -204,18 +204,20 @@ const HabitsPage = () => {
                           <Button
                             variant="outline"
                             size="icon"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
                             onClick={() => handleIncrement(habit.id)}
                             disabled={habit.current >= habit.target}
                           >
-                            <ArrowUp className="h-4 w-4" />
+                            <Check className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"
                             size="icon"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => handleDecrement(habit.id)}
                             disabled={habit.current <= 0}
                           >
-                            <ArrowDown className="h-4 w-4" />
+                            <X className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
