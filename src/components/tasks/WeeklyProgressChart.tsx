@@ -212,36 +212,41 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({ tasks }) => {
               Visão geral das suas tarefas nos últimos 7 dias
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
-            <ChartContainer config={config}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={weeklyData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                  barGap={0}
-                  barSize={12}
-                  style={{ fontSize: '12px' }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                  <XAxis 
-                    dataKey="day" 
-                    tickLine={false}
-                    axisLine={{ stroke: 'var(--border)' }}
-                  />
-                  <YAxis 
-                    tickLine={false}
-                    axisLine={{ stroke: 'var(--border)' }}
-                    tickFormatter={(value: number) => `${value}`}
-                  />
-                  <Tooltip content={<CustomTooltipContent />} />
-                  <Legend />
-                  <Bar dataKey="completed" name="Concluídas" stackId="a" fill="var(--color-completed)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="pending" name="Pendentes" stackId="a" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="inProgress" name="Em Progresso" stackId="a" fill="var(--color-inProgress)" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="canceled" name="Canceladas" stackId="a" fill="var(--color-canceled)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+          <CardContent>
+            {/* Ajuste na altura do container e margem específica para garantir que o gráfico fique contido */}
+            <div className="h-[300px] w-full">
+              <ChartContainer config={config}>
+                <ResponsiveContainer width="99%" height="100%">
+                  <BarChart
+                    data={weeklyData}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
+                    barGap={0}
+                    barSize={12}
+                    style={{ fontSize: '12px' }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                    <XAxis 
+                      dataKey="day" 
+                      tickLine={false}
+                      axisLine={{ stroke: 'var(--border)' }}
+                      height={30}
+                    />
+                    <YAxis 
+                      tickLine={false}
+                      axisLine={{ stroke: 'var(--border)' }}
+                      tickFormatter={(value: number) => `${value}`}
+                      width={30}
+                    />
+                    <Tooltip content={<CustomTooltipContent />} />
+                    <Legend wrapperStyle={{ paddingTop: 10, fontSize: '11px' }} />
+                    <Bar dataKey="completed" name="Concluídas" stackId="a" fill="var(--color-completed)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="pending" name="Pendentes" stackId="a" fill="var(--color-pending)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="inProgress" name="Em Progresso" stackId="a" fill="var(--color-inProgress)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="canceled" name="Canceladas" stackId="a" fill="var(--color-canceled)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -252,27 +257,30 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({ tasks }) => {
               Distribuição das tarefas por status
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={5}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value} tarefa(s)`, '']} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="99%" height="100%">
+                <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
+                    labelLine={false}
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} tarefa(s)`, '']} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -285,27 +293,30 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({ tasks }) => {
               Distribuição das tarefas por nível de prioridade
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                <Pie
-                  data={tasksByPriority}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={5}
-                  dataKey="value"
-                  label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
-                >
-                  {tasksByPriority.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => [`${value} tarefa(s)`, '']} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="99%" height="100%">
+                <PieChart margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                  <Pie
+                    data={tasksByPriority}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${Math.round(percent * 100)}%`}
+                    labelLine={false}
+                  >
+                    {tasksByPriority.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} tarefa(s)`, '']} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -316,27 +327,37 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({ tasks }) => {
               Progresso de conclusão de tarefas por dia
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={weeklyData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                <Tooltip formatter={(value) => [`${value}%`, 'Taxa de Conclusão']} />
-                <Line
-                  type="monotone"
-                  dataKey="completionRate"
-                  name="Taxa de Conclusão"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6, strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <CardContent>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="99%" height="100%">
+                <LineChart
+                  data={weeklyData}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="day" 
+                    height={30}
+                  />
+                  <YAxis 
+                    domain={[0, 100]} 
+                    tickFormatter={(value) => `${value}%`}
+                    width={40}
+                  />
+                  <Tooltip formatter={(value) => [`${value}%`, 'Taxa de Conclusão']} />
+                  <Line
+                    type="monotone"
+                    dataKey="completionRate"
+                    name="Taxa de Conclusão"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6, strokeWidth: 2 }}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: 10 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -349,7 +370,7 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({ tasks }) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7">
             {weeklyData.map((day) => (
               <Card key={day.date} className={`${day.isCurrentDay ? 'border-primary' : ''} hover:shadow-md transition-all`}>
                 <CardContent className="p-4">
@@ -358,7 +379,7 @@ const WeeklyProgressChart: React.FC<WeeklyProgressChartProps> = ({ tasks }) => {
                     <div className="text-sm text-muted-foreground">{format(new Date(day.date), 'dd/MM')}</div>
                     {day.isCurrentDay && <Badge className="mt-1 bg-primary">Hoje</Badge>}
                     
-                    <div className="mt-3">
+                    <div className="mt-3 w-full">
                       <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">Total:</span>
                         <span className="font-medium">{day.total}</span>
