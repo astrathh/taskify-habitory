@@ -11,7 +11,6 @@ import { useAuthStore } from "@/store/authStore";
 import { useTaskStore } from "@/store/taskStore";
 import { useAppointmentStore } from "@/store/appointmentStore";
 import { useNotificationStore } from "@/store/notificationStore";
-import { useHabitStore } from "@/store/habitStore";
 
 // Layouts
 import AppLayout from "@/components/layout/AppLayout";
@@ -25,8 +24,6 @@ import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import TasksPage from "./pages/TasksPage";
 import AppointmentsPage from "./pages/AppointmentsPage";
-import HabitsPage from "./pages/HabitsPage";
-import HabitForm from "./pages/HabitForm";
 import TaskForm from "./pages/TaskForm";
 import AppointmentForm from "./pages/AppointmentForm";
 import NotFound from "./pages/NotFound";
@@ -36,7 +33,6 @@ const App = () => {
   const { fetchTasks } = useTaskStore();
   const { fetchAppointments } = useAppointmentStore();
   const { fetchNotifications } = useNotificationStore();
-  const { fetchHabits } = useHabitStore();
 
   // Set up auth state listener
   useEffect(() => {
@@ -62,9 +58,8 @@ const App = () => {
       fetchTasks();
       fetchAppointments();
       fetchNotifications();
-      fetchHabits();
     }
-  }, [isAuthenticated, user, fetchTasks, fetchAppointments, fetchNotifications, fetchHabits]);
+  }, [isAuthenticated, user, fetchTasks, fetchAppointments, fetchNotifications]);
 
   return (
     <ThemeProvider defaultTheme="light">
@@ -94,8 +89,6 @@ const App = () => {
             <Route path="appointments" element={<AppointmentsPage />} />
             <Route path="appointments/new" element={<AppointmentForm />} />
             <Route path="appointments/edit/:id" element={<AppointmentForm />} />
-            <Route path="habits" element={<HabitsPage />} />
-            <Route path="habits/new" element={<HabitForm />} />
             <Route path="settings" element={<div>Settings Page</div>} />
           </Route>
           

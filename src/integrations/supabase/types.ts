@@ -103,38 +103,6 @@ export type Database = {
         }
         Relationships: []
       }
-      progress: {
-        Row: {
-          habits: Json
-          id: string
-          month: string
-          overall: number | null
-          user_id: string
-        }
-        Insert: {
-          habits?: Json
-          id?: string
-          month: string
-          overall?: number | null
-          user_id: string
-        }
-        Update: {
-          habits?: Json
-          id?: string
-          month?: string
-          overall?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "progress_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tasks: {
         Row: {
           category: string
