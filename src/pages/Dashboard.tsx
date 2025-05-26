@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,24 +7,16 @@ import { CheckCircle, Calendar, BarChart3, AlertCircle, Clock, Plus } from 'luci
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTaskStore } from '@/store/taskStore';
 import { useAppointmentStore } from '@/store/appointmentStore';
-import { useHabitStore } from '@/store/habitStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useAuthStore } from '@/store/authStore';
 import TasksCharts from '@/components/dashboard/TasksCharts';
 import AppointmentsCharts from '@/components/dashboard/AppointmentsCharts';
-import HabitsCharts from '@/components/dashboard/HabitsCharts';
-
-// Helper function to get current month name
-const getCurrentMonth = () => {
-  return new Date().toLocaleString('pt-BR', { month: 'long' });
-};
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { tasks, fetchTasks } = useTaskStore();
   const { appointments, fetchAppointments } = useAppointmentStore();
-  const { monthlyProgress, createMonthlyProgress, setCurrentMonth, fetchHabits } = useHabitStore();
   const { 
     addNotification, 
     fetchNotifications, 
@@ -39,25 +32,8 @@ const Dashboard = () => {
       fetchTasks();
       fetchAppointments();
       fetchNotifications();
-      fetchHabits();
     }
-  }, [user, fetchTasks, fetchAppointments, fetchNotifications, fetchHabits]);
-
-  // Initialize current month for habits if needed
-  useEffect(() => {
-    if (user?.id) {
-      const currentMonth = getCurrentMonth();
-      const hasCurrentMonth = monthlyProgress.some(
-        (progress) => progress.month === currentMonth
-      );
-      
-      if (!hasCurrentMonth) {
-        createMonthlyProgress(currentMonth, user.id);
-      }
-      
-      setCurrentMonth(currentMonth);
-    }
-  }, [user, createMonthlyProgress, monthlyProgress, setCurrentMonth]);
+  }, [user, fetchTasks, fetchAppointments, fetchNotifications]);
 
   // Send a welcome notification only for new users 
   useEffect(() => {
@@ -116,12 +92,6 @@ const Dashboard = () => {
     return appointmentDate >= today && appointmentDate <= nextWeek;
   });
 
-  // Get current month's habit progress
-  const currentMonth = getCurrentMonth();
-  const currentMonthProgress = monthlyProgress.find(
-    (progress) => progress.month === currentMonth
-  );
-  
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -143,7 +113,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <Card className="hover:shadow-md transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tarefas Pendentes</CardTitle>
@@ -178,27 +148,6 @@ const Dashboard = () => {
         
         <Card className="hover:shadow-md transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Progresso de Hábitos</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {currentMonthProgress?.overall || 0}%
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {currentMonthProgress?.habits.length || 0} hábitos em {currentMonth}
-            </p>
-            <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div 
-                className="bg-primary h-2 rounded-full" 
-                style={{ width: `${currentMonthProgress?.overall || 0}%` }}
-              ></div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-md transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Prioridade Alta</CardTitle>
             <AlertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
@@ -212,10 +161,9 @@ const Dashboard = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-3 w-full sm:w-auto">
+        <TabsList className="grid grid-cols-2 w-full sm:w-auto">
           <TabsTrigger value="tasks">Tarefas</TabsTrigger>
           <TabsTrigger value="appointments">Compromissos</TabsTrigger>
-          <TabsTrigger value="habits">Hábitos</TabsTrigger>
         </TabsList>
         
         <TabsContent value="tasks" className="space-y-4">
@@ -298,10 +246,6 @@ const Dashboard = () => {
         
         <TabsContent value="appointments">
           <AppointmentsCharts />
-        </TabsContent>
-        
-        <TabsContent value="habits">
-          <HabitsCharts />
         </TabsContent>
       </Tabs>
     </div>
