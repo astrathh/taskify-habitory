@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -10,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -40,6 +42,7 @@ import { useNotificationStore } from '@/store/notificationStore';
 
 const formSchema = z.object({
   title: z.string().min(3, { message: 'O título deve ter pelo menos 3 caracteres' }),
+  description: z.string().optional(),
   category: z.enum(['Financeiro', 'Trabalho', 'Pessoal', 'Saúde', 'Outro'] as const),
   priority: z.enum(['baixa', 'média', 'alta'] as const),
   status: z.enum(['pendente', 'em progresso', 'concluída'] as const),
@@ -61,6 +64,7 @@ const TaskForm = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
+      description: '',
       category: 'Outro',
       priority: 'média',
       status: 'pendente',
@@ -81,6 +85,7 @@ const TaskForm = () => {
     try {
       await addTask({
         title: data.title,
+        description: data.description,
         category: data.category as TaskCategory,
         priority: data.priority as TaskPriority,
         status: data.status as TaskStatus,
@@ -133,6 +138,27 @@ const TaskForm = () => {
                   </FormControl>
                   <FormDescription>
                     Digite um título para sua tarefa
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Descreva os detalhes da tarefa..." 
+                      className="min-h-[120px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Adicione uma descrição detalhada da tarefa (opcional)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

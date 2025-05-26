@@ -14,6 +14,7 @@ import TaskList from '@/components/tasks/TaskList';
 import EmptyTaskState from '@/components/tasks/EmptyTaskState';
 import TaskDetailModal from '@/components/tasks/TaskDetailModal';
 import TasksCharts from '@/components/tasks/TasksCharts';
+import TaskWidgetsSection from '@/components/tasks/TaskWidgetsSection';
 import { 
   getPriorityBadge, 
   getStatusBadge,
@@ -99,40 +100,46 @@ const TasksPage = () => {
           <TabsTrigger value="charts">Gráficos e Análises</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="list" className="space-y-4">
-          <TaskFilters 
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
-            filterPriority={filterPriority}
-            setFilterPriority={setFilterPriority}
-          />
+        <TabsContent value="list" className="space-y-6">
+          {/* Seção de Widgets */}
+          <TaskWidgetsSection tasks={tasks} />
 
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
-            </div>
-          ) : (
-            <>
-              {filteredTasks.length > 0 ? (
-                <TaskList 
-                  tasks={filteredTasks}
-                  isOverdue={isOverdue}
-                  getPriorityBadge={getPriorityBadge}
-                  getStatusBadge={getStatusBadge}
-                  getStatusClasses={getStatusClasses}
-                  handleStatusChange={handleStatusChange}
-                  handleMarkComplete={handleMarkComplete}
-                  handleDelete={handleDelete}
-                  openTaskModal={openTaskModal}
-                  navigate={navigate}
-                />
-              ) : (
-                <EmptyTaskState searchActive={isSearchActive} />
-              )}
-            </>
-          )}
+          {/* Filtros e Lista */}
+          <div className="space-y-4">
+            <TaskFilters 
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              filterPriority={filterPriority}
+              setFilterPriority={setFilterPriority}
+            />
+
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
+              </div>
+            ) : (
+              <>
+                {filteredTasks.length > 0 ? (
+                  <TaskList 
+                    tasks={filteredTasks}
+                    isOverdue={isOverdue}
+                    getPriorityBadge={getPriorityBadge}
+                    getStatusBadge={getStatusBadge}
+                    getStatusClasses={getStatusClasses}
+                    handleStatusChange={handleStatusChange}
+                    handleMarkComplete={handleMarkComplete}
+                    handleDelete={handleDelete}
+                    openTaskModal={openTaskModal}
+                    navigate={navigate}
+                  />
+                ) : (
+                  <EmptyTaskState searchActive={isSearchActive} />
+                )}
+              </>
+            )}
+          </div>
         </TabsContent>
         
         <TabsContent value="charts" className="space-y-4">
