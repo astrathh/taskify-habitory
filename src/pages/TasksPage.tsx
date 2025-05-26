@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useTaskStore, Task, TaskPriority, TaskStatus } from '@/store/taskStore';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Componentes refatorados
 import TaskHeader from '@/components/tasks/TaskHeader';
@@ -12,6 +13,7 @@ import TaskFilters from '@/components/tasks/TaskFilters';
 import TaskList from '@/components/tasks/TaskList';
 import EmptyTaskState from '@/components/tasks/EmptyTaskState';
 import TaskDetailModal from '@/components/tasks/TaskDetailModal';
+import TasksCharts from '@/components/tasks/TasksCharts';
 import { 
   getPriorityBadge, 
   getStatusBadge,
@@ -28,6 +30,7 @@ const TasksPage = () => {
   const [filterPriority, setFilterPriority] = useState<TaskPriority | 'todas'>('todas');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("list");
 
   useEffect(() => {
     if (user) {
@@ -90,39 +93,58 @@ const TasksPage = () => {
       
       <TaskMiniDashboard tasks={tasks} />
       
-      <TaskFilters 
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        filterPriority={filterPriority}
-        setFilterPriority={setFilterPriority}
-      />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid grid-cols-2 w-full sm:w-auto">
+          <TabsTrigger value="list">Lista de Tarefas</TabsTrigger>
+          <TabsTrigger value="charts">Gráficos e Análises</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="list" className="space-y-4">
+          <TaskFilters 
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            filterPriority={filterPriority}
+            setFilterPriority={setFilterPriority}
+          />
 
-      {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
-        </div>
-      ) : (
-        <>
-          {filteredTasks.length > 0 ? (
-            <TaskList 
-              tasks={filteredTasks}
-              isOverdue={isOverdue}
-              getPriorityBadge={getPriorityBadge}
-              getStatusBadge={getStatusBadge}
-              getStatusClasses={getStatusClasses}
-              handleStatusChange={handleStatusChange}
-              handleMarkComplete={handleMarkComplete}
-              handleDelete={handleDelete}
-              openTaskModal={openTaskModal}
-              navigate={navigate}
-            />
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
+            </div>
           ) : (
-            <EmptyTaskState searchActive={isSearchActive} />
+            <>
+              {filteredTasks.length > 0 ? (
+                <TaskList 
+                  tasks={filteredTasks}
+                  isOverdue={isOverdue}
+                  getPriorityBadge={getPriorityBadge}
+                  getStatusBadge={getStatusBadge}
+                  getStatusClasses={getStatusClasses}
+                  handleStatusChange={handleStatusChange}
+                  handleMarkComplete={handleMarkComplete}
+                  handleDelete={handleDelete}
+                  openTaskModal={openTaskModal}
+                  navigate={navigate}
+                />
+              ) : (
+                <EmptyTaskState searchActive={isSearchActive} />
+              )}
+            </>
           )}
-        </>
-      )}
+        </TabsContent>
+        
+        <TabsContent value="charts" className="space-y-4">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin h-8 w-8 border-2 border-primary rounded-full border-t-transparent" />
+            </div>
+          ) : (
+            <TasksCharts tasks={tasks} />
+          )}
+        </TabsContent>
+      </Tabs>
 
       <TaskDetailModal 
         task={selectedTask}
